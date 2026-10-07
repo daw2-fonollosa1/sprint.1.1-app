@@ -205,3 +205,32 @@ This stage will include:
 - Role-based access control.
 - Project assignments.
 - Persistent grading functionality.
+
+
+## Sprint 1.1 Application Versions
+
+Sprint 1.1 requires two separate applications with the same functional requirements.
+
+### JavaScript application
+
+- The application must use HTML, CSS and modern JavaScript.
+- The application must store its data in the browser's `localStorage`.
+
+### PHP application
+
+- The application must use HTML, CSS and PHP.
+- The application must store its data in a MariaDB database.
+- PHP must use object-oriented programming, PDO and the MVC pattern.
+
+### Shared functional requirements
+
+Both applications must support the same user roles, permissions and main features:
+
+- Admin, teacher and student accounts.
+- User login; users cannot register themselves.
+- User, project and evaluable item management.
+- Assigning teachers, students and evaluable items to projects.
+- Grades and the calculation of the arithmetic mean when multiple teachers grade the same student for the same project and item.
+- A dashboard for each user role.
+
+The user interface must be in Catalan. The source code and project documentation must be in English. The interface must be responsive and use Bootstrap 5.

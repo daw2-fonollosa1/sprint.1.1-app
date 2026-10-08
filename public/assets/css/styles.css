@@ -1,0 +1,78 @@
+:root {
+    /* Centralize the colors used by the application-specific styles. */
+    color-scheme: light;
+    --app-ink: #1f2937;
+    --app-muted: #667085;
+    --app-surface: #ffffff;
+    --app-canvas: #f4f6fa;
+    --app-brand: #173b63;
+}
+
+body {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    color: var(--app-ink);
+    background: var(--app-canvas);
+}
+
+.app-navbar {
+    /* Give the shared Bootstrap navbar the application's brand color. */
+    background: var(--app-brand);
+}
+
+.app-navbar .nav-link {
+    border-radius: 0.375rem;
+}
+
+.app-navbar .nav-link.active {
+    color: #ffffff;
+    background: rgb(255 255 255 / 14%);
+}
+
+.role-preview .form-label {
+    color: rgb(255 255 255 / 82%);
+    white-space: nowrap;
+}
+
+.role-preview .form-select {
+    min-width: 9.5rem;
+}
+
+.app-main {
+    /* Let the main area expand so the footer stays near the bottom. */
+    flex: 1;
+}
+
+.eyebrow {
+    color: var(--app-muted);
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.app-content-card {
+    border: 1px solid #e4e7ec;
+    border-radius: 0.875rem;
+    background: var(--app-surface);
+    box-shadow: 0 0.5rem 1.5rem rgb(16 24 40 / 5%);
+}
+
+.app-footer {
+    color: var(--app-muted);
+    font-size: 0.875rem;
+}
+
+@media (max-width: 991.98px) {
+    /* Stack the role preview controls when the Bootstrap navbar is collapsed. */
+    .role-preview {
+        align-items: stretch !important;
+        flex-wrap: wrap;
+        padding: 0.75rem 0 1rem;
+    }
+
+    .role-preview .form-select {
+        flex: 1 1 12rem;
+    }
+}

@@ -1,1 +1,10 @@
+.env
+/vendor/
 
+# Keep generated storage files out of version control.
+/storage/*
+!/storage/.gitkeep
+
+# Ignore local operating system and editor files.
+.DS_Store
+.vscode/

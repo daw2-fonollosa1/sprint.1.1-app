@@ -9,11 +9,11 @@ class DashboardController
     private const PAGES = [
         'dashboard' => [
             'title' => 'Tauler',
-            'description' => 'Un resum de l’activitat de l’aplicació apareixerà en aquesta secció.',
+            'description' => 'Resum de l’activitat i de les dades de tota l’aplicació.',
         ],
         'projects' => [
             'title' => 'Projectes',
-            'description' => 'Aquí es mostraran els projectes i les opcions disponibles per al rol seleccionat.',
+            'description' => 'Gestiona projectes i assigna-hi professorat, alumnat i ítems avaluables.',
         ],
         'users' => [
             'title' => 'Usuaris',
@@ -43,6 +43,41 @@ class DashboardController
         'student' => [
             'label' => 'Alumne/a',
             'pages' => ['dashboard', 'projects', 'grades'],
+        ],
+    ];
+
+    // These example records are sent to the page as a starting point for the admin demo.
+    // Browser-side edits only change this page's copy and are not saved after navigation.
+    private const DEMO_USERS = [
+        ['id' => 'teacher-1', 'name' => 'Marta Vila Puig', 'username' => 'mvila', 'role' => 'teacher', 'group' => ''],
+        ['id' => 'teacher-2', 'name' => 'Joan Marcet Soler', 'username' => 'jmarcet', 'role' => 'teacher', 'group' => ''],
+        ['id' => 'student-1', 'name' => 'Marc Gómez Ribas', 'username' => 'mgomez', 'role' => 'student', 'group' => 'DAM2A'],
+        ['id' => 'student-2', 'name' => 'Laura Pons Bosch', 'username' => 'lpons', 'role' => 'student', 'group' => 'DAM2B'],
+    ];
+
+    private const DEMO_ITEMS = [
+        ['id' => 'item-1', 'code' => 'IT-001', 'name' => 'Documentació', 'description' => 'Qualitat i claredat de la documentació del projecte.'],
+        ['id' => 'item-2', 'code' => 'IT-002', 'name' => 'Proves', 'description' => 'Execució i resultats de les proves del projecte.'],
+    ];
+
+    private const DEMO_PROJECTS = [
+        [
+            'id' => 'project-1',
+            'code' => 'PRJ-001',
+            'name' => 'Aplicació de gestió',
+            'description' => 'Prototip d’una aplicació web de gestió acadèmica.',
+            'teacherIds' => ['teacher-1'],
+            'studentIds' => ['student-1'],
+            'itemIds' => ['item-1'],
+        ],
+        [
+            'id' => 'project-2',
+            'code' => 'PRJ-002',
+            'name' => 'Catàleg digital',
+            'description' => 'Disseny d’un catàleg digital amb cerca i filtres.',
+            'teacherIds' => ['teacher-2'],
+            'studentIds' => ['student-2'],
+            'itemIds' => ['item-2'],
         ],
     ];
 
@@ -89,6 +124,26 @@ class DashboardController
 
         foreach (self::ROLES as $roleKey => $roleData) {
             $roleOptions[$roleKey] = $roleData['label'];
+        }
+
+        // Select a dedicated administrator view where one exists; other role pages keep the shared placeholder.
+        $pageView = '/pages/placeholder.php';
+        $adminDemoData = null;
+
+        if ($currentRoleKey === 'admin') {
+            $adminDemoData = [
+                'users' => self::DEMO_USERS,
+                'projects' => self::DEMO_PROJECTS,
+                'items' => self::DEMO_ITEMS,
+            ];
+
+            $pageView = match ($pageKey) {
+                'dashboard' => '/pages/admin/dashboard.php',
+                'users' => '/pages/admin/users.php',
+                'projects' => '/pages/admin/projects.php',
+                'evaluable-items' => '/pages/admin/evaluable_items.php',
+                default => '/pages/placeholder.php',
+            };
         }
 
         // PHP includes the layout in this scope, so the layout and child views can read

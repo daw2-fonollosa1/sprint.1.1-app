@@ -23,9 +23,12 @@
     <?php require dirname(__DIR__) . '/partials/navigation.php'; ?>
 
     <!-- The controller chooses the title and text; this shared layout gives sections the same frame. -->
-    <main class="container app-main py-4 py-lg-5">
-        <!-- Replace this placeholder with the selected section's real view later. -->
-        <?php require dirname(__DIR__) . '/pages/placeholder.php'; ?>
+    <main
+        class="container app-main py-4 py-lg-5"
+        <?= $currentRoleKey === 'admin' ? 'data-admin-page="' . htmlspecialchars($pageKey, ENT_QUOTES, 'UTF-8') . '"' : '' ?>
+    >
+        <!-- The controller chooses a dedicated admin screen or the shared placeholder for other roles. -->
+        <?php require dirname(__DIR__) . $pageView; ?>
     </main>
 
     <!-- Keep a consistent footer at the bottom of the shared application layout. -->
@@ -40,6 +43,12 @@
         integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI"
         crossorigin="anonymous"
     ></script>
+    <?php if ($adminDemoData !== null): ?>
+        <!-- Make PHP's sample records available to the browser demo as safe JSON data. -->
+        <script type="application/json" id="admin-demo-data">
+            <?= json_encode($adminDemoData, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_THROW_ON_ERROR) ?>
+        </script>
+    <?php endif; ?>
     <!-- Defer the app script until the document has been parsed. -->
     <script src="/assets/js/app.js" defer></script>
 </body>

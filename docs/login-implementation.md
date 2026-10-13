@@ -64,7 +64,7 @@ The form uses `novalidate` so the custom messages are controlled by this JavaScr
 - `teacher` maps to the teacher preview.
 - `student` maps to the student preview.
 
-When the username is recognized and the password contains non-whitespace text, PHP sends a `303` redirect to `/?page=dashboard&role=<role>`. The existing `DashboardController` then renders the matching role navigation and its simple placeholder destination.
+When the username is recognized and the password contains non-whitespace text, PHP sends a `303` redirect to `/?page=dashboard&role=<role>`. The existing `DashboardController` then renders the matching role navigation and destination. The administrator now sees the administrator dashboard; teacher and student destinations still use the shared placeholder.
 
 The password is not compared with a stored value or saved anywhere. The username and role in the URL are only demonstration inputs. A visitor can also open a role destination directly, so this flow must not be used to protect real application data.
 
@@ -94,7 +94,7 @@ Whitespace-only values count as empty. For example, a password containing only s
 - The prototype does not connect to MariaDB or save application data.
 - The remember-me checkbox is visual only.
 - Password recovery is not offered in this prototype.
-- The destination screens are simple placeholders, not full dashboards.
+- Teacher and student destination screens are still simple placeholders, not full dashboards.
 - Bootstrap is loaded from a CDN, so the browser needs an internet connection to load Bootstrap assets.
 
 ## Run or view the prototype

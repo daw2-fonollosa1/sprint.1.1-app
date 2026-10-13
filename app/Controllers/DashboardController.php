@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 class DashboardController
 {
-    // Page copy is kept separate from the page keys used in URLs.
+    // Each array key is a short section identifier used in the URL, such as ?page=projects.
+    // Its title and description are the Catalan text shown by the shared placeholder view.
     private const PAGES = [
         'dashboard' => [
             'title' => 'Tauler',
@@ -28,7 +29,8 @@ class DashboardController
         ],
     ];
 
-    // These role menus are for the interface preview only, not access control.
+    // This table controls which navigation links are displayed in the prototype for each role.
+    // It is presentation data only; changing a URL does not create real role-based security.
     private const ROLES = [
         'admin' => [
             'label' => 'Administrador',
@@ -46,18 +48,21 @@ class DashboardController
 
     public function index(): void
     {
-        // Read query parameters and fall back to a known role and page.
+        // Read the role from the URL. Use the admin preview when it is missing or unknown,
+        // so the page always has a valid role menu to display.
         $requestedRole = $_GET['role'] ?? 'admin';
         $currentRoleKey = is_string($requestedRole) && isset(self::ROLES[$requestedRole])
             ? $requestedRole
             : 'admin';
         $currentRole = self::ROLES[$currentRoleKey];
 
+        // The selected page is also a URL value, so check its type before using it as an array key.
         $requestedPage = $_GET['page'] ?? 'dashboard';
         $pageKey = is_string($requestedPage) ? $requestedPage : 'dashboard';
         $isPageAvailable = in_array($pageKey, $currentRole['pages'], true);
 
-        // Return a not-found response when the preview role has no such section.
+        // A section must be listed for the selected preview role. Unknown or unavailable sections
+        // get an HTTP 404 response and a friendly page message instead of an undefined array lookup.
         if (!$isPageAvailable) {
             http_response_code(404);
             $pageKey = 'dashboard';
@@ -69,7 +74,7 @@ class DashboardController
             $page = self::PAGES[$pageKey];
         }
 
-        // Prepare the data that the shared navigation and layout will render.
+        // Convert this role's section keys into link data used by navigation.php.
         $navigationItems = [];
 
         foreach ($currentRole['pages'] as $availablePageKey) {
@@ -79,13 +84,15 @@ class DashboardController
             ];
         }
 
+        // Build the labels for the role-preview dropdown shown in the shared navigation.
         $roleOptions = [];
 
         foreach (self::ROLES as $roleKey => $roleData) {
             $roleOptions[$roleKey] = $roleData['label'];
         }
 
-        // Views receive the prepared data from this controller scope.
+        // PHP includes the layout in this scope, so the layout and child views can read
+        // these variables without another request or JavaScript-based page routing.
         require dirname(__DIR__) . '/Views/layouts/main.php';
     }
 }

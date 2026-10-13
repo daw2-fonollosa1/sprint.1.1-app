@@ -1,11 +1,14 @@
 <!doctype html>
+<!-- Mark the page language so browsers and assistive technology use Catalan rules. -->
 <html lang="ca">
 <head>
+    <!-- Declare text encoding and mobile viewport behavior for every application section. -->
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="Aplicació de gestió de projectes globalitzats">
     <title><?= htmlspecialchars($page['title'], ENT_QUOTES, 'UTF-8') ?> · Projectes DAW2</title>
 
+    <!-- Bootstrap supplies reusable grid, spacing, navigation, and component styles. -->
     <link
         href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css"
         rel="stylesheet"
@@ -19,16 +22,19 @@
     <!-- Shared navigation is included by every page using this layout. -->
     <?php require dirname(__DIR__) . '/partials/navigation.php'; ?>
 
+    <!-- The controller chooses the title and text; this shared layout gives sections the same frame. -->
     <main class="container app-main py-4 py-lg-5">
         <!-- Replace this placeholder with the selected section's real view later. -->
         <?php require dirname(__DIR__) . '/pages/placeholder.php'; ?>
     </main>
 
+    <!-- Keep a consistent footer at the bottom of the shared application layout. -->
     <footer class="container app-footer py-4">
         <p class="mb-0">Projecte de gestió de projectes globalitzats · DAW2</p>
     </footer>
 
     <!-- Bootstrap's bundle powers interactive components such as the mobile navbar. -->
+    <!-- Bootstrap's JavaScript bundle makes the responsive navigation toggle open and close. -->
     <script
         src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"
         integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI"

@@ -1,5 +1,6 @@
 <section aria-labelledby="page-title">
-    <!-- Shared page heading; section-specific content will replace the card below. -->
+    <!-- This reusable view receives the selected role, title, and description from the controller. -->
+    <!-- The shared heading and card can later be replaced with real content for each section. -->
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-start gap-3 mb-4">
         <div>
             <p class="eyebrow mb-2">Vista de <?= htmlspecialchars($currentRole['label'], ENT_QUOTES, 'UTF-8') ?></p>
@@ -13,10 +14,12 @@
         <span class="badge rounded-pill text-bg-light border">Estructura inicial</span>
     </div>
 
+    <!-- Keep the prototype limitation visible after navigation, not only on the login page. -->
     <div class="alert alert-info" role="status">
-        Aquesta és una previsualització de la interfície. Encara no hi ha inici de sessió ni control real de permisos.
+        Aquesta és una demostració. L’inici de sessió i els permisos no són reals, i les dades no es desen.
     </div>
 
+    <!-- This card marks where future section-specific content will be placed. -->
     <div class="card app-content-card">
         <div class="card-body p-4 p-lg-5">
             <h2 class="h4">Contingut de la secció</h2>

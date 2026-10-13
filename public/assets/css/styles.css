@@ -1,5 +1,5 @@
 :root {
-    /* Centralize the colors used by the application-specific styles. */
+    /* Shared color variables make it easier to keep the interface palette consistent. */
     color-scheme: light;
     --app-ink: #1f2937;
     --app-muted: #667085;
@@ -9,6 +9,7 @@
 }
 
 body {
+    /* A full-height flex column keeps the footer below short pages. */
     min-height: 100vh;
     display: flex;
     flex-direction: column;
@@ -17,34 +18,39 @@ body {
 }
 
 .app-navbar {
-    /* Give the shared Bootstrap navbar the application's brand color. */
+    /* Override Bootstrap's default navbar background with the project's brand color. */
     background: var(--app-brand);
 }
 
 .app-navbar .nav-link {
+    /* Rounded corners make the active and hover states read as a single control. */
     border-radius: 0.375rem;
 }
 
 .app-navbar .nav-link.active {
+    /* Highlight the current page so users can see where they are in the section menu. */
     color: #ffffff;
     background: rgb(255 255 255 / 14%);
 }
 
 .role-preview .form-label {
+    /* Keep the label readable on the dark navbar and prevent it from wrapping awkwardly. */
     color: rgb(255 255 255 / 82%);
     white-space: nowrap;
 }
 
 .role-preview .form-select {
+    /* Give the role selector enough room for labels such as "Professor/a". */
     min-width: 9.5rem;
 }
 
 .app-main {
-    /* Let the main area expand so the footer stays near the bottom. */
+    /* Let the main area use spare vertical space so the footer stays near the bottom. */
     flex: 1;
 }
 
 .eyebrow {
+    /* Small uppercase text introduces which role's preview is currently displayed. */
     color: var(--app-muted);
     font-size: 0.8rem;
     font-weight: 700;
@@ -53,6 +59,7 @@ body {
 }
 
 .app-content-card {
+    /* Shared white card surface for section content and future dashboard screens. */
     border: 1px solid #e4e7ec;
     border-radius: 0.875rem;
     background: var(--app-surface);
@@ -60,12 +67,14 @@ body {
 }
 
 .app-footer {
+    /* Keep footer text visually quieter than the page's main content. */
     color: var(--app-muted);
     font-size: 0.875rem;
 }
 
 @media (max-width: 991.98px) {
-    /* Stack the role preview controls when the Bootstrap navbar is collapsed. */
+    /* At Bootstrap's large breakpoint and below, the navbar collapses into a menu button. */
+    /* Let the role controls wrap so they remain usable inside that narrower menu. */
     .role-preview {
         align-items: stretch !important;
         flex-wrap: wrap;

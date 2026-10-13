@@ -1,10 +1,12 @@
 <header>
+    <!-- Bootstrap navbar classes provide alignment and responsive collapse behavior. -->
     <nav class="navbar navbar-expand-lg navbar-dark app-navbar">
         <div class="container">
             <a class="navbar-brand fw-semibold" href="/?page=dashboard&amp;role=<?= rawurlencode($currentRoleKey) ?>">
                 Projectes DAW2
             </a>
 
+            <!-- On small screens this button opens or closes the menu with Bootstrap JavaScript. -->
             <button
                 class="navbar-toggler"
                 type="button"
@@ -18,11 +20,13 @@
             </button>
 
             <div class="collapse navbar-collapse" id="main-navigation">
-                <!-- The controller supplies only the links for the selected preview role. -->
+                <!-- The controller supplies only the section links configured for this preview role. -->
+                <!-- The loop creates one link per section; the current section is marked as active. -->
                 <ul class="navbar-nav me-lg-auto my-3 my-lg-0">
                     <?php foreach ($navigationItems as $item): ?>
                         <?php $isActive = $item['key'] === $pageKey; ?>
                         <li class="nav-item">
+                            <!-- URL-encode values for safe links and HTML-escape the visible label. -->
                             <a
                                 class="nav-link<?= $isActive ? ' active' : '' ?>"
                                 href="/?page=<?= rawurlencode($item['key']) ?>&amp;role=<?= rawurlencode($currentRoleKey) ?>"
@@ -34,7 +38,8 @@
                     <?php endforeach; ?>
                 </ul>
 
-                <!-- This GET form previews role-specific navigation; it is not login. -->
+                <!-- This GET form asks PHP to render the dashboard preview for another role. -->
+                <!-- The selector demonstrates different menus; it does not enforce permissions. -->
                 <form class="role-preview d-flex align-items-center gap-2" method="get" action="/">
                     <input type="hidden" name="page" value="dashboard">
                     <label class="form-label mb-0" for="role-preview">Previsualitza el rol</label>

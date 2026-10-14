@@ -12,10 +12,11 @@ All text shown in the interface is in Catalan. Source code, comments, and this d
 
 - `public/index.php` — Changed the front controller to show the login page by default and dispatch other page requests to the existing dashboard controller.
 - `app/Controllers/LoginController.php` — Added the server-side demo login flow. It checks that both fields have values, maps the demo usernames to roles, displays an error for an unknown username, and redirects a valid demo user to the existing role preview.
-- `app/Views/layouts/auth.php` — Added an HTML document layout for the login page. It loads Bootstrap 5, the shared stylesheet, and the application JavaScript without showing the role navigation on the login screen.
+- `app/Views/layouts/auth.php` — Added an HTML document layout for the login page. It loads Bootstrap 5, the shared stylesheet, and `login.js` without showing the role navigation on the login screen.
 - `app/Views/pages/login.php` — Added the login form with username, password, remember-me checkbox, and submit button. Bootstrap classes provide the responsive grid, card, spacing, form controls, alerts, and button. It also shows demo instructions, validation feedback, and the prototype limitation.
 - `public/assets/css/styles.css` — Keeps the shared application styles used by the dashboard. The login page relies on Bootstrap instead of custom login-specific styles.
-- `public/assets/js/app.js` — Added client-side required-field validation and kept the existing role-preview form enhancement.
+- `public/assets/js/login.js` — Validates required login fields in the browser and displays Catalan feedback.
+- `public/assets/js/app.js` — Enhances the shared role-preview form on pages that include the application navigation.
 - `app/Views/pages/placeholder.php` — Updated the role destination notice so it clearly says that login and permissions are simulated and data is not saved.
 - `docs/login-implementation.md` — Added this implementation guide.
 
@@ -27,14 +28,14 @@ All text shown in the interface is in Catalan. Source code, comments, and this d
 4. `LoginController` prepares any validation errors or demo login errors.
 5. The controller includes `app/Views/layouts/auth.php`.
 6. The authentication layout creates the HTML document and includes `app/Views/pages/login.php` inside its main content area.
-7. The browser receives the rendered HTML, loads Bootstrap and `public/assets/css/styles.css`, then loads `public/assets/js/app.js`.
+7. The browser receives the rendered HTML, loads Bootstrap and `public/assets/css/styles.css`, then loads `public/assets/js/login.js` for login validation.
 8. A valid demo submission is handled by PHP and redirects to the existing dashboard page for the selected role.
 
 The login layout is separate from `main.php` because the login screen has no application navigation bar. Bootstrap's grid and utility classes center the card and adjust its width for different screen sizes. The existing dashboard layout and destinations are reused after the demo login.
 
 ## How JavaScript validation works
 
-The login form has the `data-login-form` attribute. `app.js` finds this form and collects its fields marked `required`.
+The login form has the `data-login-form` attribute. `login.js` finds this form and collects its fields marked `required`.
 
 ### `validateRequiredField(field)`
 
@@ -110,7 +111,7 @@ Open `http://127.0.0.1:8000/` to see the login page. Use the demonstration table
 ## Verification performed
 
 - PHP syntax checks passed for the front controller, both controllers, the authentication layout, and the login and destination views.
-- Node.js syntax checking passed for `public/assets/js/app.js`.
+- Node.js syntax checking passed for `public/assets/js/login.js` and `public/assets/js/app.js`.
 - A client-side event harness confirmed that empty fields show both Catalan field messages, reveal the summary, focus the first invalid field, and prevent submission. It also confirmed that correcting the fields clears the errors and allows a valid form to submit.
 - Local HTTP checks confirmed that `admin`, `teacher`, and `student` with `demo123` each receive a `303` redirect to the matching role destination.
 - Local HTTP checks confirmed that an unknown username stays on the login page with an error, and empty username/password values stay on the page with the expected Catalan server-side messages.

@@ -4,7 +4,7 @@ This repository contains the PHP application for the individual Sprint 1.1 proje
 
 ## Project status
 
-The current implementation provides server-rendered PHP pages, role-specific navigation previews, and Bootstrap 5. The administrator area includes browser-only demonstrations for managing users, projects, evaluable items, and project assignments. Changes are temporary and are not stored. Real authentication, authorization, MariaDB persistence, and backend CRUD are not implemented yet.
+The current implementation provides server-rendered PHP pages, role-specific navigation previews, and Bootstrap 5. The administrator area includes browser-only demonstrations for managing users, projects, evaluable items, and project assignments. The teacher area demonstrates assigned projects, students, and grading. Demo changes are temporary and are not stored. Real authentication, authorization, MariaDB persistence, and backend CRUD are not implemented yet.
 
 ## Technology requirements
 
@@ -56,6 +56,7 @@ README.md
 - [Requirements](docs/requirements.md)
 - [Project decisions](docs/decisions.md)
 - [Administrator interface prototype](docs/administrator-interface.md)
+- [Teacher interface prototype](docs/teacher-interface.md)
 
 ## Run the interface scaffold
 

@@ -16,7 +16,11 @@ Visible interface text is in Catalan. Source code, comments, and this document a
 - `app/Views/pages/admin/users.php` — Separates teachers and students and provides search plus create, edit, and delete controls.
 - `app/Views/pages/admin/projects.php` — Provides project create/edit/delete controls and teacher, student, and evaluable-item assignment controls.
 - `app/Views/pages/admin/evaluable_items.php` — Provides evaluable-item search and create, edit, and delete controls.
-- `public/assets/js/app.js` — Keeps login validation and role navigation, and handles administrator interactions in temporary browser memory.
+- `public/assets/js/app.js` — Submits the shared role-preview form as a normal PHP page request.
+- `public/assets/js/admin-common.js` — Reads the sample data and provides shared table, form, modal, and feedback helpers.
+- `public/assets/js/admin-users.js` — Handles the teacher and student lists and their temporary create, edit, and delete actions.
+- `public/assets/js/admin-projects.js` — Handles project changes and project assignments.
+- `public/assets/js/admin-items.js` — Handles evaluable-item search and temporary create, edit, and delete actions.
 - `README.md` — Describes the project status and links to this guide.
 
 ## Page and navigation structure
@@ -29,7 +33,7 @@ Selecting a link sends a normal browser request such as `/?page=users&role=admin
 
 `DashboardController` defines four example users: two teachers and two students. It also defines two projects and two evaluable items. Each project stores arrays of user and item IDs, which represent its current assignments.
 
-The controller passes the arrays into `main.php`. The layout converts them to JSON inside a script element. `app.js` reads that JSON and changes the resulting JavaScript objects during the current page visit.
+The controller passes the arrays into `main.php`. The layout converts them to JSON inside a script element. `admin-common.js` reads that JSON and shares the resulting objects and helper functions with the script for the selected administrator section.
 
 ## Create, edit, delete, and assignments
 

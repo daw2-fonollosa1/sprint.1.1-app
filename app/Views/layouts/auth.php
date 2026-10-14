@@ -26,7 +26,7 @@
         <?php require dirname(__DIR__) . '/pages/login.php'; ?>
     </main>
 
-    <!-- defer waits until HTML parsing is complete before running form-validation code. -->
-    <script src="/assets/js/app.js" defer></script>
+    <!-- Load only login validation on the authentication page. -->
+    <script src="/assets/js/login.js" defer></script>
 </body>
 </html>

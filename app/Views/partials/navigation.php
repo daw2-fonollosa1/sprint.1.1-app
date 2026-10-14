@@ -24,7 +24,11 @@
                 <!-- The loop creates one link per section; the current section is marked as active. -->
                 <ul class="navbar-nav me-lg-auto my-3 my-lg-0">
                     <?php foreach ($navigationItems as $item): ?>
-                        <?php $isActive = $item['key'] === $pageKey; ?>
+                        <?php
+                        // Keep the Projects menu item active while a teacher is viewing project details.
+                        $isProjectDetails = $currentRoleKey === 'teacher' && $pageKey === 'project-details';
+                        $isActive = $item['key'] === $pageKey || ($isProjectDetails && $item['key'] === 'projects');
+                        ?>
                         <li class="nav-item">
                             <!-- URL-encode values for safe links and HTML-escape the visible label. -->
                             <a

@@ -2,6 +2,9 @@
 
 declare(strict_types=1);
 
+require_once dirname(__DIR__) . '/Models/DemoData.php';
+require_once dirname(__DIR__) . '/Models/StudentDashboardData.php';
+
 class DashboardController
 {
     // Each array key is a short section identifier used in the URL, such as ?page=projects.
@@ -50,74 +53,16 @@ class DashboardController
         ],
         'student' => [
             'label' => 'Alumne/a',
-            'pages' => ['dashboard', 'projects', 'grades'],
-        ],
-    ];
-
-    // These example records are sent to the page as a starting point for the admin demo.
-    // Browser-side edits only change this page's copy and are not saved after navigation.
-    private const DEMO_USERS = [
-        ['id' => 'teacher-1', 'name' => 'Marta Vila Puig', 'username' => 'mvila', 'role' => 'teacher', 'group' => ''],
-        ['id' => 'teacher-2', 'name' => 'Joan Marcet Soler', 'username' => 'jmarcet', 'role' => 'teacher', 'group' => ''],
-        ['id' => 'student-1', 'name' => 'Marc Gómez Ribas', 'username' => 'mgomez', 'role' => 'student', 'group' => 'DAM2A'],
-        ['id' => 'student-2', 'name' => 'Laura Pons Bosch', 'username' => 'lpons', 'role' => 'student', 'group' => 'DAM2B'],
-    ];
-
-    private const DEMO_ITEMS = [
-        ['id' => 'item-1', 'code' => 'IT-001', 'name' => 'Documentació', 'description' => 'Qualitat i claredat de la documentació del projecte.'],
-        ['id' => 'item-2', 'code' => 'IT-002', 'name' => 'Proves', 'description' => 'Execució i resultats de les proves del projecte.'],
-    ];
-
-    private const DEMO_PROJECTS = [
-        [
-            'id' => 'project-1',
-            'code' => 'PRJ-001',
-            'name' => 'Aplicació de gestió',
-            'description' => 'Prototip d’una aplicació web de gestió acadèmica.',
-            'group' => 'DAM2A',
-            'status' => 'Actiu',
-            'teacherIds' => ['teacher-1', 'teacher-2'],
-            'studentIds' => ['student-1'],
-            'itemIds' => ['item-1', 'item-2'],
-        ],
-        [
-            'id' => 'project-2',
-            'code' => 'PRJ-002',
-            'name' => 'Catàleg digital',
-            'description' => 'Disseny d’un catàleg digital amb cerca i filtres.',
-            'group' => 'DAM2B',
-            'status' => 'Actiu',
-            'teacherIds' => ['teacher-1', 'teacher-2'],
-            'studentIds' => ['student-2'],
-            'itemIds' => ['item-2'],
-        ],
-    ];
-
-    // Each record represents one student and one evaluable item inside a project.
-    // The value map stores each teacher's individual grade before the mean is calculated.
-    private const DEMO_GRADES = [
-        [
-            'projectId' => 'project-1',
-            'studentId' => 'student-1',
-            'itemId' => 'item-1',
-            'teacherGrades' => ['teacher-1' => 8.5, 'teacher-2' => 9.0],
-        ],
-        [
-            'projectId' => 'project-1',
-            'studentId' => 'student-1',
-            'itemId' => 'item-2',
-            'teacherGrades' => ['teacher-2' => 7.5],
-        ],
-        [
-            'projectId' => 'project-2',
-            'studentId' => 'student-2',
-            'itemId' => 'item-2',
-            'teacherGrades' => ['teacher-1' => 8.0],
+            'pages' => ['dashboard', 'projects', 'project-details', 'grades'],
         ],
     ];
 
     public function index(): void
     {
+        // Read all shared example records once. The data class keeps their definitions
+        // together, while this controller decides which role receives each part.
+        $demoData = DemoData::all();
+
         // Read the role from the URL. Use the admin preview when it is missing or unknown,
         // so the page always has a valid role menu to display.
         $requestedRole = $_GET['role'] ?? 'admin';
@@ -166,16 +111,17 @@ class DashboardController
             $roleOptions[$roleKey] = $roleData['label'];
         }
 
-        // Select a dedicated administrator view where one exists; other role pages keep the shared placeholder.
+        // Start with the shared placeholder, then select a dedicated view for each implemented role.
         $pageView = '/pages/placeholder.php';
         $adminDemoData = null;
         $teacherDemoData = null;
+        $studentDemoData = null;
 
         if ($currentRoleKey === 'admin') {
             $adminDemoData = [
-                'users' => self::DEMO_USERS,
-                'projects' => self::DEMO_PROJECTS,
-                'items' => self::DEMO_ITEMS,
+                'users' => $demoData['users'],
+                'projects' => $demoData['projects'],
+                'items' => $demoData['items'],
             ];
 
             $pageView = match ($pageKey) {
@@ -191,7 +137,7 @@ class DashboardController
             // The prototype login has one sample teacher; real account lookup will replace this ID later.
             $teacherId = 'teacher-1';
             $teacherProjects = array_values(array_filter(
-                self::DEMO_PROJECTS,
+                $demoData['projects'],
                 static fn (array $project): bool => in_array($teacherId, $project['teacherIds'], true),
             ));
             $teacherProjectIds = array_column($teacherProjects, 'id');
@@ -222,10 +168,10 @@ class DashboardController
 
             $teacherDemoData = [
                 'teacherId' => $teacherId,
-                'users' => self::DEMO_USERS,
+                'users' => $demoData['users'],
                 'projects' => $teacherProjects,
-                'items' => self::DEMO_ITEMS,
-                'grades' => self::DEMO_GRADES,
+                'items' => $demoData['items'],
+                'grades' => $demoData['grades'],
             ];
 
             $pageView = match ($pageKey) {
@@ -234,6 +180,42 @@ class DashboardController
                 'project-details' => '/pages/teacher/project_details.php',
                 'students' => '/pages/teacher/students.php',
                 'grades' => '/pages/teacher/grades.php',
+                default => '/pages/placeholder.php',
+            };
+        }
+
+        if ($currentRoleKey === 'student') {
+            // This preview always uses the sample student Marc. The model prepares only
+            // his project and grade data before the layout includes a student view.
+            $requestedProjectId = $_GET['project_id'] ?? null;
+            $studentData = StudentDashboardData::build(
+                'student-1',
+                $demoData,
+                is_string($requestedProjectId) ? $requestedProjectId : null,
+            );
+
+            // A missing or unassigned project must not render a different student's details.
+            if ($pageKey === 'project-details' && $studentData['selectedProject'] === null) {
+                http_response_code(404);
+            }
+
+            $studentDemoData = [
+                'student' => $studentData['student'],
+                'projects' => $studentData['projects'],
+                'gradeRows' => $studentData['gradeRows'],
+            ];
+            $selectedProject = $studentData['selectedProject'];
+            $studentGradeRows = $studentData['gradeRows'];
+            $visibleStudentGradeRows = $studentData['visibleGradeRows'];
+            $selectedGradeProjectId = $studentData['selectedGradeProjectId'];
+            $gradedItemCount = $studentData['gradedItemCount'];
+            $pendingItemCount = $studentData['pendingItemCount'];
+
+            $pageView = match ($pageKey) {
+                'dashboard' => '/pages/student/dashboard.php',
+                'projects' => '/pages/student/projects.php',
+                'project-details' => '/pages/student/project_details.php',
+                'grades' => '/pages/student/grades.php',
                 default => '/pages/placeholder.php',
             };
         }

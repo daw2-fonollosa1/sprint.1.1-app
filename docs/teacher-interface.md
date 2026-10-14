@@ -6,7 +6,8 @@ The teacher preview contains a dashboard, a list of assigned projects, project d
 
 ## Files created or changed
 
-- `app/Controllers/DashboardController.php` — Adds teacher pages and their navigation, selects the sample projects assigned to the demo teacher, and provides sample grades.
+- `app/Controllers/DashboardController.php` — Adds teacher pages and their navigation and selects the sample projects assigned to the demo teacher.
+- `app/Models/DemoData.php` — Holds the sample projects, users, evaluable items, and grades used by the teacher preview.
 - `app/Views/layouts/main.php` — Marks teacher pages, passes teacher sample data as JSON, and loads the teacher interaction script for the teacher role.
 - `public/assets/js/app.js` — Submits the shared role-preview form as a regular PHP request.
 - `app/Views/pages/teacher/dashboard.php` — Shows project, student, and pending-grade totals, recent assigned projects, and a shortcut to the grade page.

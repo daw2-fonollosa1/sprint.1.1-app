@@ -4,7 +4,7 @@ This repository contains the PHP application for the individual Sprint 1.1 proje
 
 ## Project status
 
-The current implementation provides server-rendered PHP pages, role-specific navigation previews, and Bootstrap 5. The administrator area includes browser-only demonstrations for managing users, projects, evaluable items, and project assignments. The teacher area demonstrates assigned projects, students, and grading. The student area displays assigned projects and that sample student's grades. Demo changes are temporary and are not stored. A MariaDB schema and development seed are available, but the PHP application does not use them yet; real authentication, authorization, persistence, and backend CRUD are not implemented.
+The current implementation provides server-rendered PHP pages, role-specific navigation previews, and Bootstrap 5. The administrator area includes browser-only demonstrations for managing users, projects, evaluable items, and project assignments. The teacher area demonstrates assigned projects, students, and grading. The student area displays assigned projects and that sample student's grades. Demo changes are temporary and are not stored. A MariaDB schema, development seed, PDO connection class, and connection check are available. The PHP pages still use sample data; real authentication, authorization, persistence, and backend CRUD are not implemented.
 
 ## Technology requirements
 
@@ -24,6 +24,7 @@ app/
 │   ├── DashboardController.php
 │   └── LoginController.php
 ├── Core/
+│   └── Database.php
 ├── Models/
 │   ├── DemoData.php
 │   └── StudentDashboardData.php
@@ -40,10 +41,12 @@ database/
 ├── schema.sql
 └── seed.sql
 config/
+└── database.php
 docs/
 ├── administrator-interface.md
 ├── decisions.md
 ├── database-schema.md
+├── database-connection.md
 ├── learning-objectives.md
 ├── login-implementation.md
 ├── requirements.md
@@ -59,6 +62,7 @@ public/
 routes/
 storage/
 tests/
+└── check_database_connection.php
 Dockerfile
 docker-compose.yml
 composer.json
@@ -77,6 +81,7 @@ README.md
 - [Requirements](docs/requirements.md)
 - [Project decisions](docs/decisions.md)
 - [Database schema](docs/database-schema.md)
+- [Database connection](docs/database-connection.md)
 - [Administrator interface prototype](docs/administrator-interface.md)
 - [Teacher interface prototype](docs/teacher-interface.md)
 - [Student interface prototype](docs/student-interface.md)

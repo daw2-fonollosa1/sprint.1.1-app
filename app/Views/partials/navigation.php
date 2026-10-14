@@ -25,8 +25,9 @@
                 <ul class="navbar-nav me-lg-auto my-3 my-lg-0">
                     <?php foreach ($navigationItems as $item): ?>
                         <?php
-                        // Keep the Projects menu item active while a teacher is viewing project details.
-                        $isProjectDetails = $currentRoleKey === 'teacher' && $pageKey === 'project-details';
+                        // Keep Projects active while a teacher or student views project details.
+                        $isProjectDetails = in_array($currentRoleKey, ['teacher', 'student'], true)
+                            && $pageKey === 'project-details';
                         $isActive = $item['key'] === $pageKey || ($isProjectDetails && $item['key'] === 'projects');
                         ?>
                         <li class="nav-item">

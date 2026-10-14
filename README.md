@@ -4,7 +4,7 @@ This repository contains the PHP application for the individual Sprint 1.1 proje
 
 ## Project status
 
-The current implementation provides server-rendered PHP pages, role-specific navigation previews, and Bootstrap 5. The administrator area includes browser-only demonstrations for managing users, projects, evaluable items, and project assignments. The teacher area demonstrates assigned projects, students, and grading. Demo changes are temporary and are not stored. Real authentication, authorization, MariaDB persistence, and backend CRUD are not implemented yet.
+The current implementation provides server-rendered PHP pages, role-specific navigation previews, and Bootstrap 5. The administrator area includes browser-only demonstrations for managing users, projects, evaluable items, and project assignments. The teacher area demonstrates assigned projects, students, and grading. The student area displays assigned projects and that sample student's grades. Demo changes are temporary and are not stored. Real authentication, authorization, MariaDB persistence, and backend CRUD are not implemented yet.
 
 ## Technology requirements
 
@@ -21,17 +21,31 @@ The current implementation provides server-rendered PHP pages, role-specific nav
 ```text
 app/
 ├── Controllers/
+│   ├── DashboardController.php
+│   └── LoginController.php
 ├── Core/
+├── Models/
+│   ├── DemoData.php
+│   └── StudentDashboardData.php
 └── Views/
     ├── layouts/
     ├── pages/
+    │   ├── admin/
+    │   ├── student/
+    │   ├── teacher/
+    │   ├── login.php
+    │   └── placeholder.php
     └── partials/
 config/
 docs/
-├── wireframes/
+├── administrator-interface.md
 ├── decisions.md
 ├── learning-objectives.md
-└── requirements.md
+├── login-implementation.md
+├── requirements.md
+├── student-interface.md
+├── teacher-interface.md
+└── wireframes/
 public/
 ├── assets/
 │   ├── css/
@@ -45,10 +59,13 @@ Dockerfile
 docker-compose.yml
 composer.json
 .env.example
+.gitignore
 README.md
 ```
 
 `public/` is the web document root. PHP views live under `app/Views/`; only the front controller and public assets should be directly served to the browser. Composer's `vendor/` directory is generated when dependencies are installed and is not committed.
+
+`DashboardController.php` selects the requested role and page. `DemoData.php` keeps the shared sample records in one place, and `StudentDashboardData.php` prepares the filtered project and grade information for the student views.
 
 ## Documentation
 
@@ -57,6 +74,7 @@ README.md
 - [Project decisions](docs/decisions.md)
 - [Administrator interface prototype](docs/administrator-interface.md)
 - [Teacher interface prototype](docs/teacher-interface.md)
+- [Student interface prototype](docs/student-interface.md)
 
 ## Run the interface scaffold
 

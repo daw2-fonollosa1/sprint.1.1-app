@@ -10,7 +10,8 @@ Visible interface text is in Catalan. Source code, comments, and this document a
 
 ## Files
 
-- `app/Controllers/DashboardController.php` — Defines the administrator navigation, sample users/projects/items, and the view selected for each administrator section.
+- `app/Controllers/DashboardController.php` — Defines role navigation and selects the view for each administrator section.
+- `app/Models/DemoData.php` — Keeps the sample users, projects, evaluable items, and grades shared by all role previews.
 - `app/Views/layouts/main.php` — Includes the shared navigation, selected page, Bootstrap assets, and safe JSON containing the sample data.
 - `app/Views/pages/admin/dashboard.php` — Shows sample totals and a short list of projects.
 - `app/Views/pages/admin/users.php` — Separates teachers and students and provides search plus create, edit, and delete controls.
@@ -25,13 +26,13 @@ Visible interface text is in Catalan. Source code, comments, and this document a
 
 ## Page and navigation structure
 
-The shared navigation links are configured in `DashboardController`. Administrator links open the dashboard, projects, users, evaluable items, or qualifications. The teacher and student previews keep their existing dashboard, projects, and qualifications placeholders.
+The shared navigation links are configured in `DashboardController`. Administrator links open the dashboard, projects, users, evaluable items, or qualifications. The teacher preview contains its project and grading pages. The student preview has a dashboard, assigned projects, project details, and qualifications.
 
 Selecting a link sends a normal browser request such as `/?page=users&role=admin`. PHP checks the requested role and page, then includes the matching view inside the shared layout. JavaScript does not take over page navigation.
 
 ## Sample data
 
-`DashboardController` defines four example users: two teachers and two students. It also defines two projects and two evaluable items. Each project stores arrays of user and item IDs, which represent its current assignments.
+`DemoData` defines four example users: two teachers and two students, three projects, and two evaluable items. Each project stores arrays of user and item IDs, which represent its current assignments. `PRJ-003` is an additional project assigned to Marc for the student interface demonstration.
 
 The controller passes the arrays into `main.php`. The layout converts them to JSON inside a script element. `admin-common.js` reads that JSON and shares the resulting objects and helper functions with the script for the selected administrator section.
 

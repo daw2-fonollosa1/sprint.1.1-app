@@ -4,7 +4,7 @@ This repository contains the PHP application for the individual Sprint 1.1 proje
 
 ## Project status
 
-The current implementation provides server-rendered PHP pages, role-specific navigation previews, and Bootstrap 5. The administrator area includes browser-only demonstrations for managing users, projects, evaluable items, and project assignments. The teacher area demonstrates assigned projects, students, and grading. The student area displays assigned projects and that sample student's grades. Demo changes are temporary and are not stored. Real authentication, authorization, MariaDB persistence, and backend CRUD are not implemented yet.
+The current implementation provides server-rendered PHP pages, role-specific navigation previews, and Bootstrap 5. The administrator area includes browser-only demonstrations for managing users, projects, evaluable items, and project assignments. The teacher area demonstrates assigned projects, students, and grading. The student area displays assigned projects and that sample student's grades. Demo changes are temporary and are not stored. A MariaDB schema and development seed are available, but the PHP application does not use them yet; real authentication, authorization, persistence, and backend CRUD are not implemented.
 
 ## Technology requirements
 
@@ -36,10 +36,14 @@ app/
     │   ├── login.php
     │   └── placeholder.php
     └── partials/
+database/
+├── schema.sql
+└── seed.sql
 config/
 docs/
 ├── administrator-interface.md
 ├── decisions.md
+├── database-schema.md
 ├── learning-objectives.md
 ├── login-implementation.md
 ├── requirements.md
@@ -72,6 +76,7 @@ README.md
 - [Learning objectives](docs/learning-objectives.md)
 - [Requirements](docs/requirements.md)
 - [Project decisions](docs/decisions.md)
+- [Database schema](docs/database-schema.md)
 - [Administrator interface prototype](docs/administrator-interface.md)
 - [Teacher interface prototype](docs/teacher-interface.md)
 - [Student interface prototype](docs/student-interface.md)

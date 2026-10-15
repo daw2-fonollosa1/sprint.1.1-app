@@ -114,6 +114,7 @@ class DashboardController
         // Start with the shared placeholder, then select a dedicated view for each implemented role.
         $pageView = '/pages/placeholder.php';
         $adminDemoData = null;
+        $adminUserPageData = null;
         $teacherDemoData = null;
         $studentDemoData = null;
 
@@ -123,6 +124,14 @@ class DashboardController
                 'projects' => $demoData['projects'],
                 'items' => $demoData['items'],
             ];
+
+            // The user-management section is the one administrator page backed by MariaDB.
+            // Its controller receives POST actions and returns fresh users plus any feedback
+            // so the same shared layout can render the result in the dedicated PHP view.
+            if ($pageKey === 'users') {
+                require_once dirname(__DIR__) . '/Controllers/AdminUsersController.php';
+                $adminUserPageData = (new AdminUsersController())->handle();
+            }
 
             $pageView = match ($pageKey) {
                 'dashboard' => '/pages/admin/dashboard.php',

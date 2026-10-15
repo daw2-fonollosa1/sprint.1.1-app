@@ -1,133 +1,111 @@
+// PHP creates the user rows and handles all database writes. This file only improves
+// the interface with local filtering, confirmation, and the Bootstrap create/edit modal.
 (() => {
-    const admin = window.AdminDemo;
-    if (!admin || admin.page !== 'users') return;
+    // This script is loaded only on the administrator user page. Stop safely if
+    // the expected table is missing, for example when the script is cached elsewhere.
+    const userList = document.querySelector('[data-user-list]');
+    if (!userList) return;
 
-    const {
-        page: currentPage,
-        data: demoData,
-        escapeHtml,
-        showFeedback,
-        openModal,
-        closeModal,
-        renderRows,
-        rowActions,
-        saveRecord,
-        removeRecord,
-        prepareForm,
-    } = admin;
+    // Find the page controls once so event handlers can update the same elements.
+    const search = document.querySelector('[data-user-search]');
+    const modalElement = document.querySelector('[data-user-modal]');
+    const form = document.querySelector('[data-user-form]');
+    const activeFilter = document.querySelector('[data-user-filter].active');
+    const title = document.getElementById('user-modal-title');
+    const actionField = document.querySelector('[data-user-action]');
+    const idField = document.querySelector('[data-user-id-field]');
+    const fullNameField = document.getElementById('user-name');
+    const usernameField = document.getElementById('user-username');
+    const roleField = document.getElementById('user-role');
+    const passwordField = document.querySelector('[data-user-password]');
+    const submitButton = document.querySelector('[data-user-submit]');
+    const emptyRow = document.querySelector('[data-user-empty]');
+    const userRows = Array.from(userList.querySelectorAll('[data-user-row]'));
+    let selectedRole = activeFilter ? activeFilter.dataset.userFilter : 'teacher';
 
-    // Keep a deleted or reclassified user out of all saved sample assignments.
-    function removeUserAssignments(userId) {
-        demoData.projects.forEach((project) => {
-            project.teacherIds = project.teacherIds.filter((id) => id !== userId);
-            project.studentIds = project.studentIds.filter((id) => id !== userId);
+    // Filter the PHP-rendered rows by role and optional search text.
+    // This changes only what is visible in this browser; it does not load or save records.
+    function filterUsers() {
+        const searchText = search.value.trim().toLocaleLowerCase('ca');
+        let visibleCount = 0;
+
+        userRows.forEach((row) => {
+            const matchesRole = row.dataset.userRole === selectedRole;
+            const matchesSearch = row.textContent.toLocaleLowerCase('ca').includes(searchText);
+            const isVisible = matchesRole && matchesSearch;
+
+            row.classList.toggle('d-none', !isVisible);
+            if (isVisible) visibleCount += 1;
         });
+
+        emptyRow.classList.toggle('d-none', visibleCount > 0);
     }
 
-    // User page: separate teacher and student lists, while using one reusable form.
-    if (currentPage === 'users') {
-        const list = document.querySelector('[data-user-list]');
-        const search = document.querySelector('[data-user-search]');
-        const form = document.querySelector('[data-user-form]');
-        const modal = document.getElementById('user-modal');
-        const title = document.getElementById('user-modal-title');
-        const role = document.getElementById('user-role');
-        const groupField = document.querySelector('[data-student-group-field]');
-        let activeRole = 'teacher';
+    // Start a new account using the shared modal. Reset removes data left by a previous
+    // edit, then the hidden action tells PHP to run the create operation on form submit.
+    // PHP receives this form normally, so database saving does not depend on JavaScript.
+    document.querySelector('[data-create-user]').addEventListener('click', () => {
+        form.reset();
+        actionField.value = 'create';
+        idField.value = '';
+        roleField.value = selectedRole;
+        passwordField.required = true;
+        title.textContent = 'Crea un usuari';
+        submitButton.textContent = 'Crea el compte';
+        bootstrap.Modal.getOrCreateInstance(modalElement).show();
+    });
 
-        // Show only users matching the selected role and search text.
-        function renderUsers() {
-            const searchText = search.value.trim().toLocaleLowerCase('ca');
-            const visibleUsers = demoData.users.filter((user) => {
-                const searchableText = `${user.name} ${user.username} ${user.group}`.toLocaleLowerCase('ca');
-                return user.role === activeRole && searchableText.includes(searchText);
+    // Event delegation listens on the table body, then finds the edit button that was clicked.
+    // Its data attributes contain the selected row's public fields, but never a password.
+    userList.addEventListener('click', (event) => {
+        const editButton = event.target.closest('[data-edit-user]');
+        if (!editButton) return;
+
+        form.reset();
+        actionField.value = 'update';
+        idField.value = editButton.dataset.userId;
+        fullNameField.value = editButton.dataset.userName;
+        usernameField.value = editButton.dataset.userUsername;
+        roleField.value = editButton.dataset.userRoleValue;
+        passwordField.required = false;
+        title.textContent = 'Edita un usuari';
+        submitButton.textContent = 'Desa els canvis';
+        bootstrap.Modal.getOrCreateInstance(modalElement).show();
+    });
+
+    // Ask before submitting a delete form. If confirmed, the browser sends a regular POST
+    // and MariaDB removes linked assignments and grades through the schema's cascade rules.
+    document.querySelectorAll('[data-delete-user-form]').forEach((deleteForm) => {
+        deleteForm.addEventListener('submit', (event) => {
+            const userName = deleteForm.dataset.userName;
+            const message = `Vols eliminar el compte de ${userName}? També s’eliminaran les assignacions i qualificacions vinculades.`;
+
+            if (!window.confirm(message)) event.preventDefault();
+        });
+    });
+
+    // Update the active tab and filter visible rows without requesting or changing database records.
+    document.querySelectorAll('[data-user-filter]').forEach((button) => {
+        button.addEventListener('click', () => {
+            selectedRole = button.dataset.userFilter;
+
+            document.querySelectorAll('[data-user-filter]').forEach((filter) => {
+                const isSelected = filter.dataset.userFilter === selectedRole;
+                filter.classList.toggle('active', isSelected);
+                filter.setAttribute('aria-pressed', String(isSelected));
             });
 
-            renderRows(list, visibleUsers, 4, 'No s’han trobat usuaris.', (user) => `
-                <tr>
-                    <td class="fw-semibold">${escapeHtml(user.name)}</td>
-                    <td>${escapeHtml(user.username)}</td>
-                    <td>${user.role === 'teacher' ? 'Professor/a' : escapeHtml(user.group || 'Sense grup')}</td>
-                    ${rowActions(user.id, 'user')}
-                </tr>
-            `);
-
-            document.querySelector('[data-user-count="all"]').textContent = demoData.users.length;
-            document.querySelector('[data-user-count="teacher"]').textContent = demoData.users.filter((user) => user.role === 'teacher').length;
-            document.querySelector('[data-user-count="student"]').textContent = demoData.users.filter((user) => user.role === 'student').length;
-        }
-
-        // A group is relevant for students only, so hide and disable it for teachers.
-        function updateGroupField() {
-            const isStudent = role.value === 'student';
-            groupField.classList.toggle('d-none', !isStudent);
-            groupField.querySelector('input').disabled = !isStudent;
-        }
-
-        document.querySelector('[data-create-user]').addEventListener('click', () => {
-            prepareForm(form, modal, title, 'Crea un usuari', null, ['name', 'username', 'role', 'group']);
-            role.value = 'teacher';
-            updateGroupField();
+            filterUsers();
         });
+    });
 
-        // Change the active role filter when either role button is selected.
-        document.querySelectorAll('[data-user-filter]').forEach((button) => {
-            button.addEventListener('click', () => {
-                activeRole = button.dataset.userFilter;
-                document.querySelectorAll('[data-user-filter]').forEach((filter) => {
-                    const isActive = filter.dataset.userFilter === activeRole;
-                    filter.classList.toggle('active', isActive);
-                    filter.setAttribute('aria-pressed', String(isActive));
-                });
-                renderUsers();
-            });
-        });
+    // Refilter as the user types, and run once so the initial table matches the selected role.
+    search.addEventListener('input', filterUsers);
+    filterUsers();
 
-        // Handle row actions on the table body; the rows themselves are recreated after edits.
-        list.addEventListener('click', (event) => {
-            const editButton = event.target.closest('[data-edit-user]');
-            const deleteButton = event.target.closest('[data-delete-user]');
-
-            if (editButton) {
-                const user = demoData.users.find((item) => item.id === editButton.dataset.editUser);
-                if (user) {
-                    prepareForm(form, modal, title, 'Edita un usuari', user, ['name', 'username', 'role', 'group']);
-                    role.value = user.role;
-                    updateGroupField();
-                }
-            }
-
-            if (deleteButton) {
-                const user = demoData.users.find((item) => item.id === deleteButton.dataset.deleteUser);
-                if (user && window.confirm(`Vols eliminar el compte de ${user.name}?`)) {
-                    removeRecord(demoData.users, user.id);
-                    removeUserAssignments(user.id);
-                    showFeedback(`S’ha eliminat el compte de ${user.name}.`);
-                    renderUsers();
-                }
-            }
-        });
-
-        // Save the form to the browser's temporary array, then refresh the visible list.
-        form.addEventListener('submit', (event) => {
-            event.preventDefault();
-            const result = saveRecord(demoData.users, form, ['name', 'username', 'role', 'group'], 'username', 'user', 'Aquest nom d’usuari ja existeix.');
-            if (!result) return;
-            if (result.previousRole && result.previousRole !== result.record.role) removeUserAssignments(result.record.id);
-
-            activeRole = result.record.role;
-            document.querySelectorAll('[data-user-filter]').forEach((button) => {
-                const isActive = button.dataset.userFilter === activeRole;
-                button.classList.toggle('active', isActive);
-                button.setAttribute('aria-pressed', String(isActive));
-            });
-            showFeedback(`S’han desat les dades de ${result.record.name}.`);
-            renderUsers();
-            closeModal(modal);
-        });
-
-        search.addEventListener('input', renderUsers);
-        role.addEventListener('change', updateGroupField);
-        renderUsers();
+    // If PHP rejected a submitted form, restore the modal after rendering its Catalan errors.
+    // This keeps the user in context without relying on a separate JavaScript validation result.
+    if (modalElement.dataset.openOnLoad === 'true') {
+        bootstrap.Modal.getOrCreateInstance(modalElement).show();
     }
 })();

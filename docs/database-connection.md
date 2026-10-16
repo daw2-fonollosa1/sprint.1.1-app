@@ -1,6 +1,6 @@
 # MariaDB Connection with PDO
 
-This document describes the reusable PDO connection used by the PHP application. Create-operation controllers and models now use it for inserts and for the small database reads needed by forms.
+This document describes the reusable PDO connection used by the PHP application. Login, read controllers, and create-operation controllers use it for account checks, page data, inserts, and form choices.
 
 ## Files
 
@@ -70,8 +70,6 @@ If it fails, it prints a short message asking you to check MariaDB, the PDO MySQ
 
 ## Outside this issue
 
-- The login still accepts prototype demo inputs; it does not authenticate against `users`.
-- Administrator, teacher, and student read-only pages load their records through PDO. They require a verified user session, which the current demonstration login does not create.
-- Real authentication and role-based access control are not implemented. Create handlers require a server-side session role, so writes are blocked with the current demo login.
-- Grade creation code exists, but the form cannot submit successfully until an authenticated teacher session is available.
+- The application does not provide public registration or password reset. The administrator creates teacher and student accounts.
 - Docker configuration is unchanged.
+- Live database login and dashboard checks still require MariaDB and PHP's `pdo_mysql` extension.

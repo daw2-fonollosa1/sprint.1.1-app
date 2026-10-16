@@ -51,8 +51,6 @@
         integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI"
         crossorigin="anonymous"
     ></script>
-    <!-- This small shared script enhances the role selector after HTML parsing. -->
-    <script src="/assets/js/app.js" defer></script>
     <?php if ($currentRoleKey === 'admin' && $pageKey === 'users'): ?>
         <!-- This script only filters server-rendered users and prepares normal PHP forms. -->
         <script src="/assets/js/admin-users.js" defer></script>

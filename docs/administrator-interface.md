@@ -4,7 +4,7 @@
 
 The administrator pages read users, projects, evaluable items, assignments, and dashboard totals from MariaDB. The existing PHP forms for creating and managing data remain separate from this read work. All page navigation and HTML rendering are handled by PHP.
 
-The application checks the administrator's PHP session and confirms the account and role in the `users` table before it loads administrator data. The demonstration login does not create that session, so the pages show an access message until authentication is implemented.
+The login checks the password against the `users` table and stores the verified account ID and role in the PHP session. The administrator pages confirm that account and role in the database before loading administrator data.
 
 ## Files
 
@@ -18,6 +18,7 @@ The application checks the administrator's PHP session and confirms the account 
 - `app/Models/ProjectAssignmentModel.php` — Reads the teachers, students, and items assigned to each project.
 - `app/Models/GradeModel.php` — Counts individual grades for the administrator dashboard.
 - `app/Views/layouts/main.php` — Shows safe access or database messages and includes the selected PHP view.
+- `app/Views/partials/navigation.php` — Shows only the authenticated role's links and a sign-out form.
 - `app/Views/pages/admin/dashboard.php` — Displays current project, user, item, and grade counts and a project list.
 - `app/Views/pages/admin/users.php` — Displays database users with the existing role filters.
 - `app/Views/pages/admin/projects.php` — Displays projects and the names assigned to each one.
@@ -34,6 +35,6 @@ Database values are escaped before PHP places them in HTML. Database errors are 
 
 ## Test data and limitations
 
-`database/seed.sql` contains development records for one administrator, two teachers, two students, projects, items, assignments, and grades. The normal login is still only a role preview and does not authenticate these records. Do not use the URL role selector as a substitute for a verified PHP session.
+`database/seed.sql` contains development records for one administrator, two teachers, two students, projects, items, assignments, and grades. Sign in as `admin-demo` with the development password `12345` to open the administrator pages. A role in the URL cannot change the role stored in the session.
 
-Configure MariaDB and `pdo_mysql`, load `database/schema.sql` and `database/seed.sql`, and implement a login that stores the verified user's ID and database role in `$_SESSION['user']` before expecting the administrator screens to display records.
+Configure MariaDB and `pdo_mysql`, then load `database/schema.sql` and `database/seed.sql` before expecting the administrator screens to display records.

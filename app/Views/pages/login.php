@@ -7,7 +7,13 @@
                 <p class="small text-uppercase text-secondary fw-semibold mb-2">Gestió de projectes</p>
                 <h1 class="h2 mb-4" id="login-title">Iniciar sessió</h1>
 
-                <!-- PHP prints this alert only when the controller found an unknown demo username. -->
+                <?php if ($loginNotice !== ''): ?>
+                    <div class="alert alert-success" role="status">
+                        <?= htmlspecialchars($loginNotice, ENT_QUOTES, 'UTF-8') ?>
+                    </div>
+                <?php endif; ?>
+
+                <!-- PHP prints this alert for incorrect credentials, a stale form, or a database problem. -->
                 <?php if ($loginError !== ''): ?>
                     <div class="alert alert-danger" role="alert" data-server-error>
                         <?= htmlspecialchars($loginError, ENT_QUOTES, 'UTF-8') ?>
@@ -17,9 +23,14 @@
                 <!-- JavaScript reveals this Bootstrap alert if one or both required fields are empty. -->
                 <div class="alert alert-danger" role="alert" data-login-summary hidden></div>
 
-                <!-- Submit normally to PHP; JavaScript validates fields but does not handle page navigation. -->
-                <!-- novalidate lets our script show the same custom Catalan feedback in each browser. -->
+                <!-- PHP checks the database credentials; JavaScript only validates required fields in the browser. -->
                 <form action="/?page=login" method="post" data-login-form novalidate>
+                    <!-- The token lets PHP reject a form that did not come from this session. -->
+                    <input
+                        type="hidden"
+                        name="csrf_token"
+                        value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>"
+                    >
                     <!-- PHP re-displays the username after an error so the visitor does not retype it. -->
                     <div class="mb-3">
                         <label class="form-label" for="username">Usuari</label>
@@ -42,7 +53,7 @@
                         </div>
                     </div>
 
-                    <!-- Password input masks typed characters; the prototype never stores this value. -->
+                    <!-- Password input masks typed characters; PHP compares it with the stored password hash. -->
                     <div class="mb-3">
                         <label class="form-label" for="password">Contrasenya</label>
                         <input
@@ -62,22 +73,16 @@
                         </div>
                     </div>
 
-                    <!-- This checkbox is styled by Bootstrap but has no persistence behavior. -->
-                    <div class="form-check mb-4">
-                        <input class="form-check-input" id="remember-me" name="remember-me" type="checkbox">
-                        <label class="form-check-label" for="remember-me">Recorda’m</label>
-                    </div>
-
                     <button class="btn btn-primary btn-lg w-100" type="submit">Iniciar sessió</button>
                 </form>
 
-                <!-- Separate the demo information from the form using Bootstrap border and spacing utilities. -->
+                <!-- Explain how accounts are provided without suggesting that visitors can self-register. -->
                 <div class="border-top mt-4 pt-3">
                     <p class="small text-body-secondary mb-2">
-                        Demostració: usuari admin, teacher o student i qualsevol contrasenya no buida.
+                        Introdueix les dades del compte que t’ha proporcionat l’administrador.
                     </p>
                     <p class="small text-body-secondary mb-0">
-                        Aquesta maqueta no autentica usuaris ni controla l’accés a les dades.
+                        No hi ha registre públic. El sistema comprova el compte i el rol abans de mostrar les dades.
                     </p>
                 </div>
             </div>

@@ -1,118 +1,95 @@
-# Login Prototype Implementation
+# PHP Login and Sessions
 
-## Scope
+This document explains how a user signs in to the PHP application. PHP checks the account in MariaDB, compares the entered password with its stored hash, and keeps the verified account ID and role in a server-side session. The role in the URL is never used as proof of identity.
 
-This change adds a login prototype to the PHP application. The mockup guides the placement of controls; Bootstrap 5 provides the responsive layout and visual styling. Users enter a username and password, there is no public registration, and the application has administrator, teacher, and student roles.
+## Files changed
 
-The prototype does not provide real authentication or access control. It does not store passwords, create sessions, or save the remember-me choice. A demo username selects a role, and any non-empty password is accepted for demonstration.
+- `app/Controllers/LoginController.php` — Validates the login form, verifies the account password, stores the verified ID and role in the session, redirects to the correct dashboard, and signs the user out.
+- `app/Models/UserModel.php` — Adds a prepared query that finds an account by username. The login controller uses the returned password hash; views never receive it.
+- `public/index.php` — Starts the PHP session, creates a form token, and routes login and logout requests.
+- `app/Views/pages/login.php` — Shows the Catalan login form, server feedback, and a hidden form token.
+- `app/Views/partials/navigation.php` — Shows a sign-out button that submits a normal PHP form with the form token. The old role preview selector was removed so a signed-in user cannot switch the displayed role from the navigation.
+- `app/Controllers/DashboardController.php` — Removes data used only by the old role preview selector. It still checks that the session role matches the requested role page.
+- `app/Views/layouts/main.php` — Stops loading the JavaScript file that only controlled the removed role selector. Dashboard pages remain rendered by PHP.
+- `public/assets/js/app.js` — Removed because it only submitted the old role preview form; the form no longer exists.
+- `app/Views/pages/placeholder.php` — Describes an unfinished section without claiming that login is simulated.
+- `database/seed.sql` — Gives development accounts a known test password hash. The SQL still stores only a hash, not the password text.
+- `README.md` and other role/database guides — Updated to describe the real database login and PHP session.
+- `docs/login-implementation.md` — This guide.
 
-All text shown in the interface is in Catalan. Source code, comments, and this document are in English.
+## How a login request works
 
-## Files created or changed
+1. `public/index.php` starts the PHP session and makes a random form token available.
+2. The login form sends the username, password, and token to PHP with a normal `POST` request. `public/assets/js/login.js` checks that the required fields are filled in the browser, but it does not decide whether the credentials are correct or navigate to a dashboard.
+3. `LoginController` checks the token and validates the fields again on the server.
+4. `UserModel::findByUsername()` runs a prepared SQL query against `users`. It returns the account ID, database role, and password hash.
+5. PHP's `password_verify()` compares the entered password with that hash. The plain password is not saved.
+6. If the credentials are correct, PHP changes the session ID and stores only the verified user ID and database role in `$_SESSION['user']`.
+7. PHP redirects to the matching server-rendered dashboard: `administrator` goes to `role=admin`, while `teacher` and `student` keep their matching role names.
+8. `DashboardController` checks the session role and confirms that the same account and role still exist in MariaDB before it loads that role's data.
 
-- `public/index.php` — Changed the front controller to show the login page by default and dispatch other page requests to the existing dashboard controller.
-- `app/Controllers/LoginController.php` — Added the server-side demo login flow. It checks that both fields have values, maps the demo usernames to roles, displays an error for an unknown username, and redirects a valid demo user to the existing role preview.
-- `app/Views/layouts/auth.php` — Added an HTML document layout for the login page. It loads Bootstrap 5, the shared stylesheet, and `login.js` without showing the role navigation on the login screen.
-- `app/Views/pages/login.php` — Added the login form with username, password, remember-me checkbox, and submit button. Bootstrap classes provide the responsive grid, card, spacing, form controls, alerts, and button. It also shows demo instructions, validation feedback, and the prototype limitation.
-- `public/assets/css/styles.css` — Keeps the shared application styles used by the dashboard. The login page relies on Bootstrap instead of custom login-specific styles.
-- `public/assets/js/login.js` — Validates required login fields in the browser and displays Catalan feedback.
-- `public/assets/js/app.js` — Enhances the shared role-preview form on pages that include the application navigation.
-- `app/Views/pages/placeholder.php` — Updated the role destination notice so it clearly says that login and permissions are simulated and data is not saved.
-- `docs/login-implementation.md` — Added this implementation guide.
+An unknown username and an incorrect password show the same Catalan message. Database details are written to the server log; the browser receives a general message. The sign-out form sends a `POST` request, checks the same type of form token, clears the session, and redirects back to login.
 
-## How the login page is assembled
+## Development test accounts
 
-1. A browser request to `/` reaches `public/index.php`.
-2. The front controller reads the optional `page` query parameter. If it is missing, the page is `login`.
-3. For the login page, `public/index.php` loads `LoginController` and calls its `index()` method.
-4. `LoginController` prepares any validation errors or demo login errors.
-5. The controller includes `app/Views/layouts/auth.php`.
-6. The authentication layout creates the HTML document and includes `app/Views/pages/login.php` inside its main content area.
-7. The browser receives the rendered HTML, loads Bootstrap and `public/assets/css/styles.css`, then loads `public/assets/js/login.js` for login validation.
-8. A valid demo submission is handled by PHP and redirects to the existing dashboard page for the selected role.
+The accounts below are created by `database/seed.sql`. They all use the development-only password `12345`:
 
-The login layout is separate from `main.php` because the login screen has no application navigation bar. Bootstrap's grid and utility classes center the card and adjust its width for different screen sizes. The existing dashboard layout and destinations are reused after the demo login.
+| Username | Role | Expected destination |
+| --- | --- | --- |
+| `admin-demo` | Administrator | `/?page=dashboard&role=admin` |
+| `teacher-marta` | Teacher | `/?page=dashboard&role=teacher` |
+| `teacher-joan` | Teacher | `/?page=dashboard&role=teacher` |
+| `student-marc` | Student | `/?page=dashboard&role=student` |
+| `student-laura` | Student | `/?page=dashboard&role=student` |
 
-## How JavaScript validation works
+These are sample accounts for a local development database, not production credentials. Re-importing the seed resets the password hash only for rows with these sample usernames. It does not overwrite other account fields or delete rows. The password is intentionally simple for this classroom prototype and must not be used outside a local development database.
 
-The login form has the `data-login-form` attribute. `login.js` finds this form and collects its fields marked `required`.
-
-### `validateRequiredField(field)`
-
-This function checks whether one required field contains non-whitespace text.
-
-- It reads the field's Catalan error message from `data-required-message`.
-- `setCustomValidity()` sets or clears the browser's custom validation state.
-- The Bootstrap class `is-invalid` turns on the field's invalid appearance and feedback text.
-- `aria-invalid` tells assistive technology whether the field is invalid.
-- The matching `invalid-feedback` element displays the message in Catalan.
-
-### Submit event
-
-The `submit` event validates all required fields before the browser sends the form. If any field is empty, the handler calls `preventDefault()`, displays a Catalan error summary, and focuses the first invalid field. If every field is valid, JavaScript allows the normal POST request to continue to PHP.
-
-### Input event
-
-Each required field listens for the `input` event. When the user starts correcting an invalid field, the function updates its message and invalid style. When all required fields contain text, the summary is hidden.
-
-The form uses `novalidate` so the custom messages are controlled by this JavaScript. `LoginController` repeats the required-field checks on the server so empty fields are still handled if JavaScript is disabled or bypassed.
-
-## How the role demonstration works
-
-`LoginController` contains a small map of demo usernames to role keys:
-
-- `admin` maps to the administrator preview.
-- `teacher` maps to the teacher preview.
-- `student` maps to the student preview.
-
-When the username is recognized and the password contains non-whitespace text, PHP sends a `303` redirect to `/?page=dashboard&role=<role>`. The role value selects a navigation preview only. `DashboardController` requires a verified server-side session before it loads role data, and this demo login does not create one, so the shared layout shows an access message instead of the dashboard records.
-
-The password is not compared with a stored value or saved anywhere. The username and role in the URL are only demonstration inputs. A visitor can also open a role destination directly, so this flow must not be used to protect real application data.
-
-The “Recorda’m” checkbox has no persistence behavior. Password recovery is not offered in this prototype.
-
-## Demonstration inputs and expected results
-
-The password must contain at least one non-whitespace character. Any such value is accepted with a recognized demo username.
+## Test examples
 
 | Username | Password | Expected result |
 | --- | --- | --- |
-| `admin` | `demo123` | Redirect to `/?page=dashboard&role=admin`; administrator navigation appears with an access message instead of records. |
-| `teacher` | `demo123` | Redirect to `/?page=dashboard&role=teacher`; teacher navigation appears with an access message instead of records. |
-| `student` | `demo123` | Redirect to `/?page=dashboard&role=student`; student navigation appears with an access message instead of records. |
-| empty | `demo123` | Stay on login; show “Introdueix el teu nom d’usuari.” and the form summary. |
-| `admin` | empty | Stay on login; show “Introdueix la contrasenya.” and the form summary. |
-| empty | empty | Stay on login; show both field messages and the form summary. |
-| `unknown` | `demo123` | Client-side required checks pass; PHP stays on login and shows that the username is not a demo account. |
+| `admin-demo` | `12345` | Login succeeds and PHP opens the administrator dashboard. |
+| `teacher-marta` | `12345` | Login succeeds and PHP opens the teacher dashboard. |
+| `student-marc` | `12345` | Login succeeds and PHP opens Marc's student dashboard. |
+| `student-marc` | `wrong-password` | Login stays on the form and shows “L’usuari o la contrasenya no són correctes.” |
+| `unknown-user` | `12345` | The same generic incorrect-credentials message appears. |
+| blank | `12345` | The username field shows its required-field message. |
+| `admin-demo` | blank | The password field shows its required-field message. |
 
-Whitespace-only values count as empty. For example, a password containing only spaces is invalid.
+After signing in, try changing `role=admin` to another value in the address bar. PHP must reject the role mismatch instead of displaying another account's dashboard. Use **Tanca la sessió** to end the session.
 
-## Limitations
+## Run the application
 
-- There is no real user authentication or password verification.
-- There are no PHP sessions or persistent login state.
-- The role parameter is visible in the URL and is not an access-control check.
-- The prototype does not connect to MariaDB or save application data.
-- The remember-me checkbox is visual only.
-- Password recovery is not offered in this prototype.
-- Teacher and student database-backed dashboard pages exist, but the demonstration login cannot reach their data without a verified server-side session.
-- Bootstrap is loaded from a CDN, so the browser needs an internet connection to load Bootstrap assets.
+1. Install and start MariaDB, and enable PHP's PDO MySQL extension (`pdo_mysql`).
+2. Configure `.env` using `.env.example`.
+3. Create the database and sample data from the repository root:
 
-## Run or view the prototype
+   ```bash
+   mariadb -u root -p < database/schema.sql
+   mariadb -u root -p daw2_project_manager < database/seed.sql
+   ```
 
-From the repository root, start PHP's built-in development server:
+   The seed resets the password hashes for the five known sample usernames and skips duplicate sample records without overwriting them. It does not delete rows.
+4. Check the database connection:
 
-```bash
-php -S 127.0.0.1:8000 -t public
-```
+   ```bash
+   php tests/check_database_connection.php
+   ```
 
-Open `http://127.0.0.1:8000/` to see the login page. Use the demonstration table above to visit each role destination. The layout is responsive; reduce the browser width to see the mobile version.
+5. Start the PHP server and open the login page:
 
-## Verification performed
+   ```bash
+   php -S 127.0.0.1:8000 -t public
+   ```
 
-- PHP syntax checks passed for the front controller, both controllers, the authentication layout, and the login and destination views.
-- Node.js syntax checking passed for `public/assets/js/login.js` and `public/assets/js/app.js`.
-- A client-side event harness confirmed that empty fields show both Catalan field messages, reveal the summary, focus the first invalid field, and prevent submission. It also confirmed that correcting the fields clears the errors and allows a valid form to submit.
-- Local HTTP checks confirmed that `admin`, `teacher`, and `student` with `demo123` each receive a `303` redirect to the matching role destination.
-- Local HTTP checks confirmed that an unknown username stays on the login page with an error, and empty username/password values stay on the page with the expected Catalan server-side messages.
-- A rendered GET response was checked for the login labels, username and password fields, remember-me checkbox, and prototype limitation notice.
+   Visit `http://127.0.0.1:8000/` and use one of the development accounts above.
+
+If login cannot connect, check that `pdo_mysql` appears in `php -m`, MariaDB is running, and the `.env` values match the local database. At implementation time this environment had neither PDO nor `pdo_mysql`, so a live database login could not be confirmed here.
+
+## Limits
+
+- There is no public registration or password reset. An administrator creates teacher and student accounts.
+- The form does not have a “remember me” option. It uses the normal PHP session lifetime rather than creating a long-lived login cookie.
+- The application uses PHP sessions and checks roles, but production deployment still needs HTTPS, strong account passwords, backups, and operational security measures such as login rate limiting.
+- The seeded password is for local development only. Replace or remove sample accounts before using a production database.
+- PHP renders page navigation and dashboard data. JavaScript is limited to the existing client-side required-field feedback; the app is not a JavaScript SPA.

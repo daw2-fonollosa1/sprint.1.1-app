@@ -2,10 +2,14 @@
 
 declare(strict_types=1);
 
-// Keep role information in PHP's server-side session namespace. The current demo
-// login does not populate this session, so privileged POST requests stay blocked.
+// Start the server-side session before any controller reads the logged-in account.
 if (session_status() !== PHP_SESSION_ACTIVE) {
     session_start();
+}
+
+// Use one session token for login and logout forms to reject forged POST requests.
+if (!isset($_SESSION['csrf_token']) || !is_string($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
 }
 
 // This file is the single public entry point: the web server sends page requests here.
@@ -15,17 +19,20 @@ $requestedPage = $_GET['page'] ?? 'login';
 // If no usable value was provided, show the login page as the default.
 $page = is_string($requestedPage) ? $requestedPage : 'login';
 
-if ($page === 'login') {
-    // Load the login controller only when the visitor asked for the login page.
+if ($page === 'login' || $page === 'logout') {
+    // Keep both authentication actions in the same small controller.
     require_once dirname(__DIR__) . '/app/Controllers/LoginController.php';
-    // The controller checks the submitted form and selects the view to render.
     $controller = new LoginController();
+
+    if ($page === 'logout') {
+        $controller->logout();
+    }
+
     $controller->index();
-    // Stop here so this request cannot also render the dashboard layout below.
     exit;
 }
 
-// Every other page value is handled by the role-aware dashboard prototype controller.
+// Every other page value is handled by the role-aware dashboard controller.
 require_once dirname(__DIR__) . '/app/Controllers/DashboardController.php';
 $controller = new DashboardController();
 // The controller reads the requested section and includes the shared application layout.

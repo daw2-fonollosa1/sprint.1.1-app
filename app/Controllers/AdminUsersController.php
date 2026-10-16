@@ -37,14 +37,14 @@ class AdminUsersController
         ];
 
         if (!RoleAuthorization::hasRole('administrator')) {
-            $state['accessError'] = 'Cal una sessió d’administrador autenticada al servidor. El login actual només permet previsualitzar les pantalles.';
+            $state['accessError'] = 'Cal iniciar sessió amb un compte d’administrador per gestionar els usuaris.';
         }
 
         // Reject an unauthenticated write before opening PDO. This makes the server-side
         // role check the first decision for POST requests, even when MariaDB is unavailable.
         if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && !RoleAuthorization::hasRole('administrator')) {
             http_response_code(403);
-            $state['accessError'] = 'No s’ha pogut verificar el teu rol al servidor. Cal implementar l’autenticació abans de modificar usuaris.';
+            $state['accessError'] = 'El compte autenticat no té permisos per modificar usuaris.';
 
             // The write is rejected, but keep the existing read-only user list visible when
             // MariaDB is available so the denied form response is not mistaken for no users.

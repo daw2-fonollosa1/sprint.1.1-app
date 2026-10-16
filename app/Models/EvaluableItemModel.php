@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-/** Reads and creates evaluable items using PDO prepared statements. */
+/** Reads, creates, and updates evaluable items using PDO prepared statements. */
 class EvaluableItemModel
 {
     private PDO $connection;
@@ -24,12 +24,19 @@ class EvaluableItemModel
     }
 
     /** Check a unique code before insert so users see a useful message. */
-    public function codeExists(string $code): bool
+    public function codeExists(string $code, ?int $exceptId = null): bool
     {
-        $statement = $this->connection->prepare(
-            'SELECT id FROM evaluable_items WHERE code = :code LIMIT 1',
-        );
-        $statement->execute(['code' => $code]);
+        if ($exceptId === null) {
+            $statement = $this->connection->prepare(
+                'SELECT id FROM evaluable_items WHERE code = :code LIMIT 1',
+            );
+            $statement->execute(['code' => $code]);
+        } else {
+            $statement = $this->connection->prepare(
+                'SELECT id FROM evaluable_items WHERE code = :code AND id <> :except_id LIMIT 1',
+            );
+            $statement->execute(['code' => $code, 'except_id' => $exceptId]);
+        }
 
         return $statement->fetchColumn() !== false;
     }
@@ -53,6 +60,22 @@ class EvaluableItemModel
              VALUES (:code, :name, :description)',
         );
         $statement->execute([
+            'code' => $code,
+            'name' => $name,
+            'description' => $description,
+        ]);
+    }
+
+    /** Update the item fields while leaving every project assignment intact. */
+    public function update(int $id, string $code, string $name, string $description): void
+    {
+        $statement = $this->connection->prepare(
+            'UPDATE evaluable_items
+             SET code = :code, name = :name, description = :description
+             WHERE id = :id',
+        );
+        $statement->execute([
+            'id' => $id,
             'code' => $code,
             'name' => $name,
             'description' => $description,

@@ -17,7 +17,7 @@ class CreateOperationsController
      * Process a create form and return its feedback for the PHP view.
      * ReadOperationsController loads the lists shown beside these forms.
      */
-    public function handle(string $section, string $previewRole): array
+    public function handle(string $section, string $roleKey): array
     {
         $state = [
             'feedback' => $this->feedbackFromUrl(),
@@ -28,22 +28,22 @@ class CreateOperationsController
         ];
 
         if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
-            $this->handlePost($section, $previewRole, $state);
+            $this->handlePost($section, $roleKey, $state);
         }
 
-        $pageRole = $this->requiredRoleForPage($section, $previewRole);
+        $pageRole = $this->requiredRoleForPage($section, $roleKey);
         if ($pageRole !== '' && !RoleAuthorization::hasRole($pageRole) && $state['accessError'] === '') {
-            $state['accessError'] = 'Cal iniciar una sessió vàlida amb el rol corresponent. El login actual és només una demostració.';
+            $state['accessError'] = 'Cal iniciar sessió amb un compte que tingui el rol corresponent.';
         }
 
         return $state;
     }
 
     /** Check the role before reading form fields or opening the database for a write. */
-    private function handlePost(string $section, string $previewRole, array &$state): void
+    private function handlePost(string $section, string $roleKey, array &$state): void
     {
         $action = $this->postString('action');
-        $requiredRole = $this->requiredRoleForAction($action, $section, $previewRole);
+        $requiredRole = $this->requiredRoleForAction($action, $section, $roleKey);
 
         if ($requiredRole === '') {
             http_response_code(400);
@@ -53,7 +53,7 @@ class CreateOperationsController
 
         if (!RoleAuthorization::hasRole($requiredRole)) {
             http_response_code(403);
-            $state['accessError'] = 'No s’ha pogut verificar el teu rol al servidor. Cal implementar l’autenticació abans de crear dades.';
+            $state['accessError'] = 'El compte autenticat no té els permisos necessaris per crear aquestes dades.';
             return;
         }
 
@@ -274,28 +274,28 @@ class CreateOperationsController
     }
 
     /** Return the server-side role allowed to submit this action, or an empty string. */
-    private function requiredRoleForAction(string $action, string $section, string $previewRole): string
+    private function requiredRoleForAction(string $action, string $section, string $roleKey): string
     {
         if ($action === 'create_project' && $section === 'projects') {
-            if ($previewRole === 'admin') {
+            if ($roleKey === 'admin') {
                 return 'administrator';
             }
 
-            if ($previewRole === 'teacher') {
+            if ($roleKey === 'teacher') {
                 return 'teacher';
             }
         }
 
-        if ($action === 'create_item' && $section === 'evaluable-items' && $previewRole === 'admin') {
+        if ($action === 'create_item' && $section === 'evaluable-items' && $roleKey === 'admin') {
             return 'administrator';
         }
 
         if (in_array($action, ['assign_teachers', 'assign_students', 'assign_items'], true)
-            && $section === 'projects' && $previewRole === 'admin') {
+            && $section === 'projects' && $roleKey === 'admin') {
             return 'administrator';
         }
 
-        if ($action === 'create_grade' && $section === 'grades' && $previewRole === 'teacher') {
+        if ($action === 'create_grade' && $section === 'grades' && $roleKey === 'teacher') {
             return 'teacher';
         }
 
@@ -304,13 +304,13 @@ class CreateOperationsController
     }
 
     /** Return the role needed to view a protected form page, or empty for a public page. */
-    private function requiredRoleForPage(string $section, string $previewRole): string
+    private function requiredRoleForPage(string $section, string $roleKey): string
     {
-        if (($section === 'projects' || $section === 'evaluable-items') && $previewRole === 'admin') {
+        if (($section === 'projects' || $section === 'evaluable-items') && $roleKey === 'admin') {
             return 'administrator';
         }
 
-        if (($section === 'projects' || $section === 'grades') && $previewRole === 'teacher') {
+        if (($section === 'projects' || $section === 'grades') && $roleKey === 'teacher') {
             return 'teacher';
         }
 
@@ -357,7 +357,7 @@ class CreateOperationsController
         exit;
     }
 
-    /** Only read the preview role to build a return link; never use it as authorization. */
+    /** Read the route role key to build a return link; authorization uses the session role. */
     private function currentPreviewRole(): string
     {
         $role = $_GET['role'] ?? 'admin';

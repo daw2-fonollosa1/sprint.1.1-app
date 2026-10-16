@@ -4,7 +4,7 @@
 
 Teacher pages read assigned projects, associated students, and evaluable items from MariaDB. The dashboard also shows the number of individual grades entered by the teacher and the number of assigned grading combinations still pending. Project and grade forms remain PHP forms.
 
-The pages are filtered by the ID and role in the server-side session. The current demonstration login does not create an authenticated session, so it cannot display teacher data yet.
+The pages are filtered by the ID and role in the server-side session. The login verifies the teacher account in MariaDB and creates that session before the dashboard loads.
 
 ## Files
 
@@ -35,7 +35,7 @@ The project detail page accepts a project ID from the URL only after the control
 
 ## Try the screens
 
-After MariaDB and `pdo_mysql` are available, load the schema and seed data. Once a verified teacher login stores the matching user ID and role in the PHP session:
+After MariaDB and `pdo_mysql` are available, load the schema and seed data, then sign in as `teacher-marta` or `teacher-joan` with the development password `12345`:
 
 1. Open `/?page=dashboard&role=teacher`. The seed has two teachers, each assigned to three projects and two students across those projects.
 2. Open **Els meus projectes**. The page should show only projects assigned to the signed-in teacher and their assigned students/items.
@@ -43,6 +43,4 @@ After MariaDB and `pdo_mysql` are available, load the schema and seed data. Once
 4. Open **Alumnat**. A student assigned to multiple of the teacher's projects should appear once with each project listed.
 5. Open **Qualificacions** and change the project. PHP reloads the page and offers students and items linked to that project.
 
-## Authentication dependency
-
-The role in a URL is only a navigation preview. Until a real login verifies a password, loads the user from MariaDB, and creates `$_SESSION['user']`, the application intentionally displays an access message instead of teacher records. This avoids treating a URL parameter as a privacy boundary.
+The teacher role comes from the verified database account in the PHP session. A role value changed in the URL does not grant access to another role's data.

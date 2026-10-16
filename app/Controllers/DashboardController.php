@@ -10,7 +10,8 @@ require_once dirname(__DIR__) . '/Models/UserModel.php';
 /** Selects a role page and provides it with database data. */
 class DashboardController
 {
-    // These keys control page links. They are display choices, not authenticated roles.
+    // Each route key names one menu and its matching database role. The session is
+    // checked against databaseRole before the controller loads any role-specific data.
     private const ROLES = [
         'admin' => [
             'label' => 'Administrador',
@@ -62,13 +63,13 @@ class DashboardController
         }
 
         $navigationItems = $this->navigationItems($currentRole['pages']);
-        $roleOptions = $this->roleOptions();
         $pageView = $this->viewFor($currentRoleKey, $pageKey);
 
         // Start with empty values so each view has a predictable shape.
         $adminDashboardData = ['projects' => [], 'teachers' => [], 'students' => [], 'items' => [], 'gradeCount' => 0];
         $adminUserPageData = null;
         $createOperationsData = null;
+        $updateOperationsData = null;
         $teacherData = [
             'projects' => [],
             'students' => [],
@@ -85,8 +86,8 @@ class DashboardController
         $readAccessError = '';
         $readDatabaseError = '';
 
-        // The role in the URL only chooses a page preview. Read records only when a
-        // server-side session has the same role and its user exists in MariaDB.
+        // The URL chooses a route key, but the session role decides whether it can open.
+        // Read records only when that session account still exists in MariaDB.
         $sessionUser = RoleAuthorization::currentUser();
 
         if ($sessionUser === null) {
@@ -105,11 +106,19 @@ class DashboardController
                     http_response_code(403);
                     $readAccessError = 'No s’ha pogut verificar el compte autenticat a la base de dades.';
                 } else {
-                    // Write forms keep their own controller and return only messages and submitted values.
+                    // Keep create and update requests in their own controllers. An update POST
+                    // must not be mistaken for an unknown create action on the same page.
                     $createState = null;
-                    if ($this->isCreateFormPage($currentRoleKey, $pageKey)) {
+                    $isUpdatePost = $this->isUpdatePost();
+                    if ($this->isCreateFormPage($currentRoleKey, $pageKey) && !$isUpdatePost) {
                         require_once __DIR__ . '/CreateOperationsController.php';
                         $createState = (new CreateOperationsController())->handle($pageKey, $currentRoleKey);
+                    }
+
+                    $updateState = null;
+                    if ($this->isUpdateFormPage($currentRoleKey, $pageKey)) {
+                        require_once __DIR__ . '/UpdateOperationsController.php';
+                        $updateState = (new UpdateOperationsController())->handle($pageKey, $currentRoleKey);
                     }
 
                     // One controller prepares the records displayed by the current page.
@@ -126,9 +135,17 @@ class DashboardController
                     $selectedProject = $readData['selectedProject'];
                     $studentData = $readData['studentData'];
 
-                    if ($createState !== null) {
+                    if ($this->isCreateFormPage($currentRoleKey, $pageKey)) {
                         // Existing views use one array for their read lists and create feedback.
-                        $createOperationsData = array_merge($readData['formData'], $createState);
+                        $createOperationsData = array_merge(
+                            $readData['formData'],
+                            $createState ?? $this->emptyCreateState(),
+                        );
+                    }
+
+                    if ($updateState !== null) {
+                        // Update forms receive the same database choices plus their own messages.
+                        $updateOperationsData = array_merge($readData['formData'], $updateState);
                     }
 
                     if ($currentRoleKey === 'admin' && $pageKey === 'users') {
@@ -174,7 +191,38 @@ class DashboardController
             || ($roleKey === 'teacher' && in_array($pageKey, ['projects', 'grades'], true));
     }
 
-    /** Choose one of the three navigation previews without treating it as permission. */
+    /** Identify the pages that contain the update forms handled by UpdateOperationsController. */
+    private function isUpdateFormPage(string $roleKey, string $pageKey): bool
+    {
+        return ($roleKey === 'admin' && in_array($pageKey, ['projects', 'evaluable-items'], true))
+            || ($roleKey === 'teacher' && in_array($pageKey, ['projects', 'grades'], true));
+    }
+
+    /** Distinguish an update POST from the create forms that share the same pages. */
+    private function isUpdatePost(): bool
+    {
+        if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') {
+            return false;
+        }
+
+        $action = $_POST['action'] ?? '';
+
+        return is_string($action) && str_starts_with($action, 'update_');
+    }
+
+    /** Provide empty create values when this response came from an update form. */
+    private function emptyCreateState(): array
+    {
+        return [
+            'feedback' => '',
+            'accessError' => '',
+            'databaseError' => '',
+            'validationErrors' => [],
+            'submitted' => [],
+        ];
+    }
+
+    /** Read the page role key; the session role is checked separately before data is loaded. */
     private function requestedRole(): string
     {
         $role = $_GET['role'] ?? 'admin';
@@ -201,18 +249,6 @@ class DashboardController
         }
 
         return is_string($projectId) ? $projectId : null;
-    }
-
-    /** Build the shared role dropdown labels. */
-    private function roleOptions(): array
-    {
-        $options = [];
-
-        foreach (self::ROLES as $roleKey => $role) {
-            $options[$roleKey] = $role['label'];
-        }
-
-        return $options;
     }
 
     /** Build the current role's menu and leave project details as a contextual link. */

@@ -33,24 +33,13 @@ body {
     background: rgb(255 255 255 / 14%);
 }
 
-.role-preview .form-label {
-    /* Keep the label readable on the dark navbar and prevent it from wrapping awkwardly. */
-    color: rgb(255 255 255 / 82%);
-    white-space: nowrap;
-}
-
-.role-preview .form-select {
-    /* Give the role selector enough room for labels such as "Professor/a". */
-    min-width: 9.5rem;
-}
-
 .app-main {
     /* Let the main area use spare vertical space so the footer stays near the bottom. */
     flex: 1;
 }
 
 .eyebrow {
-    /* Small uppercase text introduces which role's preview is currently displayed. */
+    /* Small uppercase text introduces the role of the signed-in account. */
     color: var(--app-muted);
     font-size: 0.8rem;
     font-weight: 700;
@@ -70,18 +59,4 @@ body {
     /* Keep footer text visually quieter than the page's main content. */
     color: var(--app-muted);
     font-size: 0.875rem;
-}
-
-@media (max-width: 991.98px) {
-    /* At Bootstrap's large breakpoint and below, the navbar collapses into a menu button. */
-    /* Let the role controls wrap so they remain usable inside that narrower menu. */
-    .role-preview {
-        align-items: stretch !important;
-        flex-wrap: wrap;
-        padding: 0.75rem 0 1rem;
-    }
-
-    .role-preview .form-select {
-        flex: 1 1 12rem;
-    }
 }

@@ -4,13 +4,13 @@ This repository contains the PHP application for the individual Sprint 1.1 proje
 
 ## Project status
 
-The current implementation provides server-rendered PHP pages, role-specific navigation previews, and Bootstrap 5. The administrator area includes browser-only demonstrations for managing users, projects, evaluable items, and project assignments. The teacher area demonstrates assigned projects, students, and grading. The student area displays assigned projects and that sample student's grades. Demo changes are temporary and are not stored. A MariaDB schema, development seed, PDO connection class, and connection check are available. The PHP pages still use sample data; real authentication, authorization, persistence, and backend CRUD are not implemented.
+The current implementation provides server-rendered PHP pages, role-specific navigation previews, and Bootstrap 5. PDO create handlers are implemented for users, projects, evaluable items, project assignments, and individual grades. However, every database write requires an authenticated server-side session, and the demonstration login does not create one, so writes are blocked until authentication is implemented. The login and role selector do not provide real authentication or access control.
 
 ## Technology requirements
 
 - PHP without an application framework.
 - Object-oriented programming and the MVC pattern.
-- MariaDB access through PDO when persistence is implemented.
+- MariaDB access through PDO with prepared statements for the application's create operations.
 - Bootstrap 5 for the responsive interface.
 - Catalan text in the user interface.
 - English source code, code comments, and project documentation.
@@ -21,13 +21,21 @@ The current implementation provides server-rendered PHP pages, role-specific nav
 ```text
 app/
 ├── Controllers/
+│   ├── AdminUsersController.php
+│   ├── CreateOperationsController.php
 │   ├── DashboardController.php
 │   └── LoginController.php
 ├── Core/
-│   └── Database.php
+│   ├── Database.php
+│   └── RoleAuthorization.php
 ├── Models/
 │   ├── DemoData.php
-│   └── StudentDashboardData.php
+│   ├── EvaluableItemModel.php
+│   ├── GradeModel.php
+│   ├── ProjectAssignmentModel.php
+│   ├── ProjectModel.php
+│   ├── StudentDashboardData.php
+│   └── UserModel.php
 └── Views/
     ├── layouts/
     ├── pages/
@@ -44,6 +52,7 @@ config/
 └── database.php
 docs/
 ├── administrator-interface.md
+├── administrator-user-management.md
 ├── decisions.md
 ├── database-schema.md
 ├── database-connection.md
@@ -82,7 +91,9 @@ README.md
 - [Project decisions](docs/decisions.md)
 - [Database schema](docs/database-schema.md)
 - [Database connection](docs/database-connection.md)
+- [Create operations](docs/create-operations.md)
 - [Administrator interface prototype](docs/administrator-interface.md)
+- [Administrator user management](docs/administrator-user-management.md)
 - [Teacher interface prototype](docs/teacher-interface.md)
 - [Student interface prototype](docs/student-interface.md)
 

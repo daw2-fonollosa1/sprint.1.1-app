@@ -44,12 +44,6 @@
         integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI"
         crossorigin="anonymous"
     ></script>
-    <?php if ($adminDemoData !== null && in_array($pageKey, ['users', 'projects', 'evaluable-items'], true)): ?>
-        <!-- Make PHP's sample records available to the browser demo as safe JSON data. -->
-        <script type="application/json" id="admin-demo-data">
-            <?= json_encode($adminDemoData, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_THROW_ON_ERROR) ?>
-        </script>
-    <?php endif; ?>
     <?php if ($teacherDemoData !== null): ?>
         <!-- Give the teacher demonstration its own sample data without changing PHP page routing. -->
         <script type="application/json" id="teacher-demo-data">
@@ -58,16 +52,10 @@
     <?php endif; ?>
     <!-- This small shared script enhances the role selector after HTML parsing. -->
     <script src="/assets/js/app.js" defer></script>
-    <?php if ($currentRoleKey === 'admin' && in_array($pageKey, ['users', 'projects', 'evaluable-items'], true)): ?>
-        <!-- Load shared administrator helpers before the selected section's interactions. -->
-        <script src="/assets/js/admin-common.js" defer></script>
-        <?php if ($pageKey === 'users'): ?>
-            <script src="/assets/js/admin-users.js" defer></script>
-        <?php elseif ($pageKey === 'projects'): ?>
-            <script src="/assets/js/admin-projects.js" defer></script>
-        <?php else: ?>
-            <script src="/assets/js/admin-items.js" defer></script>
-        <?php endif; ?>
+    <?php if ($currentRoleKey === 'admin' && $pageKey === 'users'): ?>
+        <!-- User management already receives live rows from PHP/PDO, so it does not get demo JSON.
+             This script only filters server-rendered users and prepares normal PHP forms. -->
+        <script src="/assets/js/admin-users.js" defer></script>
     <?php endif; ?>
     <?php if ($currentRoleKey === 'teacher'): ?>
         <!-- Keep teacher project and grading interactions in a focused script file. -->

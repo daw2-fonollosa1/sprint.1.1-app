@@ -1,6 +1,6 @@
 # Database Schema
 
-This document explains the first MariaDB schema for the PHP application. The SQL files create the tables and add small development examples. PHP does not use this database yet.
+This document explains the MariaDB schema used by the PHP application. The SQL files create the tables and add small development examples. Create handlers use the tables through the existing PDO connection; see `docs/create-operations.md` for details and the current login blocker.
 
 ## Files
 
@@ -81,4 +81,4 @@ mariadb -u root -p daw2_project_manager -e "SHOW TABLES; SELECT role, COUNT(*) A
 
 For project 1, student 4, and item 1, the final query should show two grade rows because two teachers graded that combination. A second grade by the same teacher for that exact combination should be rejected by the unique constraint.
 
-The schema has not been connected to the PHP application. A later persistence task will need to add database configuration and PDO queries.
+The schema is connected to create handlers through PDO. The handlers use the existing schema without adding fields. Real authentication and successful application writes still require a future login/session implementation.

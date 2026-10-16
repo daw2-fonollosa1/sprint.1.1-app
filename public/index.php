@@ -2,6 +2,12 @@
 
 declare(strict_types=1);
 
+// Keep role information in PHP's server-side session namespace. The current demo
+// login does not populate this session, so privileged POST requests stay blocked.
+if (session_status() !== PHP_SESSION_ACTIVE) {
+    session_start();
+}
+
 // This file is the single public entry point: the web server sends page requests here.
 // PHP reads the "page" query parameter so it can choose which controller should build the response.
 $requestedPage = $_GET['page'] ?? 'login';

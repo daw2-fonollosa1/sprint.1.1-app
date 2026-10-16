@@ -114,6 +114,8 @@ class DashboardController
         // Start with the shared placeholder, then select a dedicated view for each implemented role.
         $pageView = '/pages/placeholder.php';
         $adminDemoData = null;
+        $adminUserPageData = null;
+        $createOperationsData = null;
         $teacherDemoData = null;
         $studentDemoData = null;
 
@@ -124,13 +126,38 @@ class DashboardController
                 'items' => $demoData['items'],
             ];
 
-            $pageView = match ($pageKey) {
-                'dashboard' => '/pages/admin/dashboard.php',
-                'users' => '/pages/admin/users.php',
-                'projects' => '/pages/admin/projects.php',
-                'evaluable-items' => '/pages/admin/evaluable_items.php',
-                default => '/pages/placeholder.php',
-            };
+            // The user-management section is the one administrator page backed by MariaDB.
+            // Its controller receives POST actions and returns fresh users plus any feedback
+            // so the same shared layout can render the result in the dedicated PHP view.
+            if ($pageKey === 'users') {
+                require_once dirname(__DIR__) . '/Controllers/AdminUsersController.php';
+                $adminUserPageData = (new AdminUsersController())->handle();
+            }
+
+            // These administrator pages use database-backed create-only forms. The
+            // controller also prepares the small lists needed by project assignments.
+            if (in_array($pageKey, ['projects', 'evaluable-items'], true)) {
+                require_once dirname(__DIR__) . '/Controllers/CreateOperationsController.php';
+                $createOperationsData = (new CreateOperationsController())->handle($pageKey, $currentRoleKey);
+            }
+
+            // Use a simple switch so it is clear which administrator URL loads each view.
+            switch ($pageKey) {
+                case 'dashboard':
+                    $pageView = '/pages/admin/dashboard.php';
+                    break;
+                case 'users':
+                    $pageView = '/pages/admin/users.php';
+                    break;
+                case 'projects':
+                    $pageView = '/pages/admin/projects.php';
+                    break;
+                case 'evaluable-items':
+                    $pageView = '/pages/admin/evaluable_items.php';
+                    break;
+                default:
+                    $pageView = '/pages/placeholder.php';
+            }
         }
 
         if ($currentRoleKey === 'teacher') {
@@ -174,14 +201,33 @@ class DashboardController
                 'grades' => $demoData['grades'],
             ];
 
-            $pageView = match ($pageKey) {
-                'dashboard' => '/pages/teacher/dashboard.php',
-                'projects' => '/pages/teacher/projects.php',
-                'project-details' => '/pages/teacher/project_details.php',
-                'students' => '/pages/teacher/students.php',
-                'grades' => '/pages/teacher/grades.php',
-                default => '/pages/placeholder.php',
-            };
+            // Project creation and grade entry use the existing PDO setup. The
+            // controller checks server-side session roles before every database write.
+            if (in_array($pageKey, ['projects', 'grades'], true)) {
+                require_once dirname(__DIR__) . '/Controllers/CreateOperationsController.php';
+                $createOperationsData = (new CreateOperationsController())->handle($pageKey, $currentRoleKey);
+            }
+
+            // Each teacher section is a separate PHP view rendered by the shared layout.
+            switch ($pageKey) {
+                case 'dashboard':
+                    $pageView = '/pages/teacher/dashboard.php';
+                    break;
+                case 'projects':
+                    $pageView = '/pages/teacher/projects.php';
+                    break;
+                case 'project-details':
+                    $pageView = '/pages/teacher/project_details.php';
+                    break;
+                case 'students':
+                    $pageView = '/pages/teacher/students.php';
+                    break;
+                case 'grades':
+                    $pageView = '/pages/teacher/grades.php';
+                    break;
+                default:
+                    $pageView = '/pages/placeholder.php';
+            }
         }
 
         if ($currentRoleKey === 'student') {
@@ -211,13 +257,23 @@ class DashboardController
             $gradedItemCount = $studentData['gradedItemCount'];
             $pendingItemCount = $studentData['pendingItemCount'];
 
-            $pageView = match ($pageKey) {
-                'dashboard' => '/pages/student/dashboard.php',
-                'projects' => '/pages/student/projects.php',
-                'project-details' => '/pages/student/project_details.php',
-                'grades' => '/pages/student/grades.php',
-                default => '/pages/placeholder.php',
-            };
+            // Keep student navigation server-rendered by choosing a PHP view for the page.
+            switch ($pageKey) {
+                case 'dashboard':
+                    $pageView = '/pages/student/dashboard.php';
+                    break;
+                case 'projects':
+                    $pageView = '/pages/student/projects.php';
+                    break;
+                case 'project-details':
+                    $pageView = '/pages/student/project_details.php';
+                    break;
+                case 'grades':
+                    $pageView = '/pages/student/grades.php';
+                    break;
+                default:
+                    $pageView = '/pages/placeholder.php';
+            }
         }
 
         // PHP includes the layout in this scope, so the layout and child views can read

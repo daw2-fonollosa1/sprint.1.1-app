@@ -71,7 +71,7 @@ If it fails, it prints a short message asking you to check MariaDB, the PDO MySQ
 ## Outside this issue
 
 - The login still accepts prototype demo inputs; it does not authenticate against `users`.
-- Dashboards and most read-only role pages still use temporary sample data.
+- Administrator, teacher, and student read-only pages load their records through PDO. They require a verified user session, which the current demonstration login does not create.
 - Real authentication and role-based access control are not implemented. Create handlers require a server-side session role, so writes are blocked with the current demo login.
 - Grade creation code exists, but the form cannot submit successfully until an authenticated teacher session is available.
 - Docker configuration is unchanged.

@@ -6,6 +6,13 @@ $escapeProjectValue = static fn (string|int $value): string => htmlspecialchars(
 $operationData = $createOperationsData;
 $submittedProject = $operationData['submitted'];
 $formUrl = '/?page=projects&amp;role=admin';
+$renderNames = static function (array $names) use ($escapeProjectValue): string {
+    if ($names === []) {
+        return 'Cap';
+    }
+
+    return implode(', ', array_map($escapeProjectValue, $names));
+};
 ?>
 <section aria-labelledby="projects-title">
     <div class="mb-4">
@@ -62,20 +69,30 @@ $formUrl = '/?page=projects&amp;role=admin';
     <article class="card border-0 shadow-sm mb-4">
         <div class="card-body">
             <h2 class="h4">Projectes existents</h2>
-            <p class="text-secondary">Aquesta llista es llig de MariaDB per comprovar les creacions desades.</p>
+            <p class="text-secondary">Projectes i assignacions actuals llegits de MariaDB.</p>
             <div class="table-responsive">
                 <table class="table table-hover align-middle mb-0">
-                    <thead class="table-light"><tr><th scope="col">Codi</th><th scope="col">Nom</th><th scope="col">Descripció</th></tr></thead>
+                    <thead class="table-light"><tr><th scope="col">Codi</th><th scope="col">Nom</th><th scope="col">Descripció</th><th scope="col">Professorat</th><th scope="col">Alumnat</th><th scope="col">Ítems</th></tr></thead>
                     <tbody>
                         <?php foreach ($operationData['projects'] as $project): ?>
+                            <?php
+                            $projectAssignments = $operationData['projectAssignments'][(int) $project['id']] ?? [
+                                'teachers' => [],
+                                'students' => [],
+                                'items' => [],
+                            ];
+                            ?>
                             <tr>
                                 <td><?= $escapeProjectValue($project['code']) ?></td>
                                 <td class="fw-semibold"><?= $escapeProjectValue($project['name']) ?></td>
                                 <td><?= $escapeProjectValue($project['description']) ?></td>
+                                <td><?= $renderNames($projectAssignments['teachers']) ?></td>
+                                <td><?= $renderNames($projectAssignments['students']) ?></td>
+                                <td><?= $renderNames($projectAssignments['items']) ?></td>
                             </tr>
                         <?php endforeach; ?>
                         <?php if ($operationData['projects'] === []): ?>
-                            <tr><td colspan="3" class="text-center text-secondary py-4">Encara no hi ha projectes.</td></tr>
+                            <tr><td colspan="6" class="text-center text-secondary py-4">Encara no hi ha projectes.</td></tr>
                         <?php endif; ?>
                     </tbody>
                 </table>

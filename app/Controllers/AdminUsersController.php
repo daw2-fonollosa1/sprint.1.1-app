@@ -15,12 +15,12 @@ require_once dirname(__DIR__) . '/Models/UserModel.php';
  */
 class AdminUsersController
 {
-    public function handle(): array
+    public function handle(?array $loadedUsers = null): array
     {
         // Collect everything the view needs in one array so it can render the page
         // without querying the database or interpreting raw request parameters.
         $state = [
-            'users' => [],
+            'users' => $loadedUsers ?? [],
             'feedback' => $this->feedbackFromUrl(),
             'databaseError' => '',
             'accessError' => '',
@@ -48,11 +48,13 @@ class AdminUsersController
 
             // The write is rejected, but keep the existing read-only user list visible when
             // MariaDB is available so the denied form response is not mistaken for no users.
-            try {
-                $state['users'] = (new UserModel(Database::getConnection()))->getManagedUsers();
-            } catch (Throwable $error) {
-                error_log('Administrator user list read failed: ' . $error->getMessage());
-                $state['databaseError'] = 'No s’ha pogut carregar la llista d’usuaris.';
+            if ($loadedUsers === null) {
+                try {
+                    $state['users'] = (new UserModel(Database::getConnection()))->getManagedUsers();
+                } catch (Throwable $error) {
+                    error_log('Administrator user list read failed: ' . $error->getMessage());
+                    $state['databaseError'] = 'No s’ha pogut carregar la llista d’usuaris.';
+                }
             }
 
             return $state;
@@ -70,7 +72,7 @@ class AdminUsersController
 
             // Read the latest database rows after handling a request, so the next page
             // response shows the change that was just made.
-            $state['users'] = $users->getManagedUsers();
+            $state['users'] = $loadedUsers ?? $users->getManagedUsers();
         } catch (Throwable $error) {
             // Keep technical details in the server log for the developer. The page only
             // receives a general Catalan message, never the SQL, password, or stack trace.

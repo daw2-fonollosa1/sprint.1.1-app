@@ -65,7 +65,7 @@ The form uses `novalidate` so the custom messages are controlled by this JavaScr
 - `teacher` maps to the teacher preview.
 - `student` maps to the student preview.
 
-When the username is recognized and the password contains non-whitespace text, PHP sends a `303` redirect to `/?page=dashboard&role=<role>`. The existing `DashboardController` then renders the matching role navigation and destination. The administrator now sees the administrator dashboard; teacher and student destinations still use the shared placeholder.
+When the username is recognized and the password contains non-whitespace text, PHP sends a `303` redirect to `/?page=dashboard&role=<role>`. The role value selects a navigation preview only. `DashboardController` requires a verified server-side session before it loads role data, and this demo login does not create one, so the shared layout shows an access message instead of the dashboard records.
 
 The password is not compared with a stored value or saved anywhere. The username and role in the URL are only demonstration inputs. A visitor can also open a role destination directly, so this flow must not be used to protect real application data.
 
@@ -77,9 +77,9 @@ The password must contain at least one non-whitespace character. Any such value 
 
 | Username | Password | Expected result |
 | --- | --- | --- |
-| `admin` | `demo123` | Redirect to `/?page=dashboard&role=admin`; administrator navigation appears. |
-| `teacher` | `demo123` | Redirect to `/?page=dashboard&role=teacher`; teacher navigation appears. |
-| `student` | `demo123` | Redirect to `/?page=dashboard&role=student`; student navigation appears. |
+| `admin` | `demo123` | Redirect to `/?page=dashboard&role=admin`; administrator navigation appears with an access message instead of records. |
+| `teacher` | `demo123` | Redirect to `/?page=dashboard&role=teacher`; teacher navigation appears with an access message instead of records. |
+| `student` | `demo123` | Redirect to `/?page=dashboard&role=student`; student navigation appears with an access message instead of records. |
 | empty | `demo123` | Stay on login; show “Introdueix el teu nom d’usuari.” and the form summary. |
 | `admin` | empty | Stay on login; show “Introdueix la contrasenya.” and the form summary. |
 | empty | empty | Stay on login; show both field messages and the form summary. |
@@ -95,7 +95,7 @@ Whitespace-only values count as empty. For example, a password containing only s
 - The prototype does not connect to MariaDB or save application data.
 - The remember-me checkbox is visual only.
 - Password recovery is not offered in this prototype.
-- Teacher and student destination screens are still simple placeholders, not full dashboards.
+- Teacher and student database-backed dashboard pages exist, but the demonstration login cannot reach their data without a verified server-side session.
 - Bootstrap is loaded from a CDN, so the browser needs an internet connection to load Bootstrap assets.
 
 ## Run or view the prototype

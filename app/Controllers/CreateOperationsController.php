@@ -10,12 +10,12 @@ require_once dirname(__DIR__) . '/Models/ProjectAssignmentModel.php';
 require_once dirname(__DIR__) . '/Models/ProjectModel.php';
 require_once dirname(__DIR__) . '/Models/UserModel.php';
 
-/** Validates create-only forms and passes approved values to the PDO models. */
+/** Validates create-only forms and sends approved values to the PDO models. */
 class CreateOperationsController
 {
     /**
-     * Handle one application section and prepare the minimal database data its forms need.
-     * The role in the URL selects a prototype page only; permissions come from RoleAuthorization.
+     * Process a create form and return its feedback for the PHP view.
+     * ReadOperationsController loads the lists shown beside these forms.
      */
     public function handle(string $section, string $previewRole): array
     {
@@ -25,14 +25,6 @@ class CreateOperationsController
             'databaseError' => '',
             'validationErrors' => [],
             'submitted' => [],
-            'projects' => [],
-            'items' => [],
-            'teachers' => [],
-            'students' => [],
-            'teacherProjects' => [],
-            'gradeStudents' => [],
-            'gradeItems' => [],
-            'selectedProjectId' => '',
         ];
 
         if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
@@ -42,45 +34,6 @@ class CreateOperationsController
         $pageRole = $this->requiredRoleForPage($section, $previewRole);
         if ($pageRole !== '' && !RoleAuthorization::hasRole($pageRole) && $state['accessError'] === '') {
             $state['accessError'] = 'Cal iniciar una sessió vàlida amb el rol corresponent. El login actual és només una demostració.';
-        }
-
-        try {
-            $connection = Database::getConnection();
-            $projects = new ProjectModel($connection);
-            $items = new EvaluableItemModel($connection);
-            $users = new UserModel($connection);
-
-            if ($section === 'projects' && $previewRole === 'admin') {
-                $state['projects'] = $projects->getAll();
-                $state['teachers'] = $users->getUsersByRole('teacher');
-                $state['students'] = $users->getUsersByRole('student');
-                $state['items'] = $items->getAll();
-            } elseif ($section === 'evaluable-items' && $previewRole === 'admin') {
-                $state['items'] = $items->getAll();
-            } elseif ($section === 'projects' && $previewRole === 'teacher') {
-                $sessionUser = RoleAuthorization::currentUser();
-                if ($sessionUser !== null && $sessionUser['role'] === 'teacher') {
-                    $state['teacherProjects'] = $projects->getForTeacher($sessionUser['id']);
-                }
-            } elseif ($section === 'grades' && $previewRole === 'teacher') {
-                $sessionUser = RoleAuthorization::currentUser();
-                if ($sessionUser !== null && $sessionUser['role'] === 'teacher') {
-                    $gradeModel = new GradeModel($connection);
-                    $state['teacherProjects'] = $gradeModel->getTeacherProjects($sessionUser['id']);
-                    $state['selectedProjectId'] = $this->selectedProjectId($state['teacherProjects']);
-
-                    if ($state['selectedProjectId'] !== '') {
-                        $projectId = (int) $state['selectedProjectId'];
-                        $state['gradeStudents'] = $gradeModel->getProjectStudents($projectId);
-                        $state['gradeItems'] = $gradeModel->getProjectItems($projectId);
-                    }
-                }
-            }
-
-        } catch (Throwable $error) {
-            // Keep connection details and SQL diagnostics out of the Catalan interface.
-            error_log('Create operation page data failed: ' . $error->getMessage());
-            $state['databaseError'] = 'No s’han pogut carregar les dades. Revisa la connexió amb la base de dades.';
         }
 
         return $state;
@@ -392,22 +345,6 @@ class CreateOperationsController
     private function isValidGradeFormat(string $value): bool
     {
         return preg_match('/^-?\d{1,6}(?:\.\d{1,4})?$/', $value) === 1;
-    }
-
-    /** Read a requested project only when it is one of the authenticated teacher's projects. */
-    private function selectedProjectId(array $projects): string
-    {
-        $postedProjectId = $this->postString('project_id');
-        $requestedProjectId = $_GET['project_id'] ?? $postedProjectId;
-        $requestedProjectId = is_string($requestedProjectId) ? $requestedProjectId : '';
-
-        foreach ($projects as $project) {
-            if ((string) $project['id'] === $requestedProjectId) {
-                return $requestedProjectId;
-            }
-        }
-
-        return isset($projects[0]['id']) ? (string) $projects[0]['id'] : '';
     }
 
     /** Redirect successful creates so reloading the result cannot repeat the POST. */

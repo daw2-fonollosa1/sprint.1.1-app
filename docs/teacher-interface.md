@@ -1,47 +1,48 @@
-# Teacher Interface Prototype
+# Teacher Interface
 
 ## Scope
 
-The teacher preview contains a dashboard, a list of assigned projects, project details, a list of associated students, and a grade entry page. PHP renders these pages. The project and grade forms now use create-only PDO handlers, while the remaining dashboard and detail views still use sample data. All writes require a verified teacher session; the current demo login does not create one.
+Teacher pages read assigned projects, associated students, and evaluable items from MariaDB. The dashboard also shows the number of individual grades entered by the teacher and the number of assigned grading combinations still pending. Project and grade forms remain PHP forms.
 
-## Files created or changed
+The pages are filtered by the ID and role in the server-side session. The current demonstration login does not create an authenticated session, so it cannot display teacher data yet.
 
-- `app/Controllers/DashboardController.php` — Adds teacher pages and their navigation and selects the sample projects assigned to the demo teacher.
-- `app/Models/DemoData.php` — Holds the sample projects, users, evaluable items, and grades used by the teacher preview.
-- `app/Views/layouts/main.php` — Marks teacher pages, passes teacher sample data as JSON, and loads the teacher interaction script for the teacher role.
-- `public/assets/js/app.js` — Submits the shared role-preview form as a regular PHP request.
-- `app/Views/pages/teacher/dashboard.php` — Shows project, student, and pending-grade totals, recent assigned projects, and a shortcut to the grade page.
-- `app/Views/pages/teacher/projects.php` — Lists multiple assigned projects and links to their details or grade entry.
-- `app/Views/pages/teacher/project_details.php` — Shows a project's code, name, description, assigned students, and evaluable items.
-- `app/Views/pages/teacher/students.php` — Lists students associated with the teacher's projects and links to their project details or grading form.
-- `app/Views/pages/teacher/grades.php` — Provides server-rendered project, student, item, and individual grade creation forms.
-- `app/Controllers/CreateOperationsController.php`, `app/Models/GradeModel.php`, and `app/Models/ProjectModel.php` — Validate and save teacher project and grade creates through PDO.
-- `public/assets/js/teacher.js` — Remains in the project for the earlier prototype, but no longer saves the grade form.
-- `README.md` — Adds the teacher prototype to the project status and documentation links.
-- `docs/teacher-interface.md` — Explains the teacher prototype and how to demonstrate it.
+## Files
 
-## Projects, details, students, and items
+- `app/Controllers/DashboardController.php` — Checks the teacher session before showing a role page.
+- `app/Controllers/ReadOperationsController.php` — Loads the selected teacher page data and resolves project choices only inside that teacher's assigned projects.
+- `app/Models/TeacherDashboardData.php` — Reads a teacher's assigned projects, students, and evaluable items and counts grades and pending combinations.
+- `app/Models/ProjectModel.php` — Reads projects assigned through `teacher_projects`.
+- `app/Models/GradeModel.php` — Reads the project, student, and item choices required by the existing grade form.
+- `app/Views/pages/teacher/dashboard.php` — Shows database totals and assigned projects.
+- `app/Views/pages/teacher/projects.php` — Lists assigned projects and retains the existing PHP project form.
+- `app/Views/pages/teacher/project_details.php` — Shows one assigned project, its students, and its evaluable items.
+- `app/Views/pages/teacher/students.php` — Lists unique students across the teacher's projects and shows each student's project links.
+- `app/Views/pages/teacher/grades.php` — Retains the PHP grade form and accepts only project choices returned for the signed-in teacher.
+- `docs/read-operations.md` — Explains how all database reads and privacy filters work.
 
-The sample teacher is `teacher-1`. The controller filters the project sample data by that teacher ID, so the project list can contain more than one project. Each project stores the IDs of its assigned students and evaluable items.
+## How teacher data is filtered
 
-The dashboard and projects page link to project details. The detail page shows the project information, its students, and its evaluable items. The students page combines students across the teacher's assigned projects and shows which project each student belongs to.
+`TeacherDashboardData` starts from the `teacher_projects` table. It then joins `student_projects` and `project_evaluable_items` to find only students and items attached to those projects. The teacher ID is passed as a prepared SQL value.
 
-The shared navigation includes the dashboard, projects, students, and qualifications. Project details are opened from a project link, so they do not appear as a separate top-level menu item. All links use regular PHP page requests.
+The project detail page accepts a project ID from the URL only after the controller compares it with the teacher's already-filtered project list. The project, student, and item names are escaped before display. The schema does not contain project status or student group columns, so those values are not shown.
 
-## Grade creation
+## Dashboard counts
 
-The grade page asks the teacher to select an assigned project, an assigned student, an evaluable item linked to that project, and a grade value. The requirements do not define a grade scale or rounding rule, so the form checks only the precision supported by `DECIMAL(10,4)` in the database.
+- Assigned projects: number of rows in the teacher's filtered project list.
+- Students: number of unique students associated with those projects.
+- Grades entered: individual `grades` rows whose `teacher_id` is the signed-in teacher.
+- Pending: assigned project/student/item combinations for which this teacher has not entered a grade.
 
-The grade form submits to PHP and inserts one database row for the authenticated teacher and selected assigned project/student/item. The unique schema key prevents the same teacher from inserting a duplicate grade while allowing another teacher to create a separate row. This create-only issue does not read grades or calculate averages.
+## Try the screens
 
-## Try the demonstration
+After MariaDB and `pdo_mysql` are available, load the schema and seed data. Once a verified teacher login stores the matching user ID and role in the PHP session:
 
-1. From the repository root, run `php -S 127.0.0.1:8000 -t public` and open `http://127.0.0.1:8000/`.
-2. Sign in with username `teacher` and any non-empty password. This still opens only the demo role preview.
-3. Open **Els meus projectes**. Sample project cards remain for navigation, and the new PDO form explains that server authentication is required.
-4. Open **Qualificacions**. Without a verified server session, project/student/item options are unavailable and the POST is blocked.
-5. After a future login issue creates a verified teacher session, select an assigned project and test the grade inputs listed in `docs/create-operations.md`.
+1. Open `/?page=dashboard&role=teacher`. The seed has two teachers, each assigned to three projects and two students across those projects.
+2. Open **Els meus projectes**. The page should show only projects assigned to the signed-in teacher and their assigned students/items.
+3. Open one project's details. Confirm its student and item lists match the assignment tables.
+4. Open **Alumnat**. A student assigned to multiple of the teacher's projects should appear once with each project listed.
+5. Open **Qualificacions** and change the project. PHP reloads the page and offers students and items linked to that project.
 
-## Temporary behavior and backend work
+## Authentication dependency
 
-The project and grade inserts use MariaDB through PDO, but a real login/session system is still missing. The current role selector is only a preview, so the server rejects create submissions until login stores a verified teacher identity in PHP's session. Sample project, student, and item data still powers the prototype detail pages. Grade scale and rounding rules also remain undefined in the requirements.
+The role in a URL is only a navigation preview. Until a real login verifies a password, loads the user from MariaDB, and creates `$_SESSION['user']`, the application intentionally displays an access message instead of teacher records. This avoids treating a URL parameter as a privacy boundary.

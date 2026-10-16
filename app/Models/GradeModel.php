@@ -59,6 +59,14 @@ class GradeModel
         return $statement->fetchAll();
     }
 
+    /** Return the total number of individual grades for the administrator dashboard. */
+    public function countAll(): int
+    {
+        $statement = $this->connection->query('SELECT COUNT(*) FROM grades');
+
+        return (int) $statement->fetchColumn();
+    }
+
     /** Check that the selected teacher is assigned to the project being graded. */
     public function teacherHasProject(int $teacherId, int $projectId): bool
     {

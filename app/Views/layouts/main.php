@@ -22,14 +22,22 @@
     <!-- Shared navigation is included by every page using this layout. -->
     <?php require dirname(__DIR__) . '/partials/navigation.php'; ?>
 
-    <!-- The controller chooses the title and text; this shared layout gives sections the same frame. -->
-    <main
-        class="container app-main py-4 py-lg-5"
-        <?= $currentRoleKey === 'admin' ? 'data-admin-page="' . htmlspecialchars($pageKey, ENT_QUOTES, 'UTF-8') . '"' : '' ?>
-        <?= $currentRoleKey === 'teacher' ? 'data-teacher-page="' . htmlspecialchars($pageKey, ENT_QUOTES, 'UTF-8') . '"' : '' ?>
-    >
-        <!-- The controller chooses a dedicated admin screen or the shared placeholder for other roles. -->
-        <?php require dirname(__DIR__) . $pageView; ?>
+    <!-- This shared layout gives every role page the same responsive frame. -->
+    <main class="container app-main py-4 py-lg-5">
+        <?php if ($readAccessError !== ''): ?>
+            <div class="alert alert-warning" role="alert">
+                <h1 class="h5">Accés a les dades</h1>
+                <p class="mb-0"><?= htmlspecialchars($readAccessError, ENT_QUOTES, 'UTF-8') ?></p>
+            </div>
+        <?php elseif ($readDatabaseError !== ''): ?>
+            <div class="alert alert-danger" role="alert">
+                <h1 class="h5">No s’han pogut carregar les dades</h1>
+                <p class="mb-0"><?= htmlspecialchars($readDatabaseError, ENT_QUOTES, 'UTF-8') ?></p>
+            </div>
+        <?php else: ?>
+            <!-- PHP includes the selected view after the controller has prepared its data. -->
+            <?php require dirname(__DIR__) . $pageView; ?>
+        <?php endif; ?>
     </main>
 
     <!-- Keep a consistent footer at the bottom of the shared application layout. -->
@@ -37,29 +45,17 @@
         <p class="mb-0">Projecte de gestió de projectes globalitzats · DAW2</p>
     </footer>
 
-    <!-- Bootstrap's bundle powers interactive components such as the mobile navbar. -->
     <!-- Bootstrap's JavaScript bundle makes the responsive navigation toggle open and close. -->
     <script
         src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"
         integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI"
         crossorigin="anonymous"
     ></script>
-    <?php if ($teacherDemoData !== null): ?>
-        <!-- Give the teacher demonstration its own sample data without changing PHP page routing. -->
-        <script type="application/json" id="teacher-demo-data">
-            <?= json_encode($teacherDemoData, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_THROW_ON_ERROR) ?>
-        </script>
-    <?php endif; ?>
     <!-- This small shared script enhances the role selector after HTML parsing. -->
     <script src="/assets/js/app.js" defer></script>
     <?php if ($currentRoleKey === 'admin' && $pageKey === 'users'): ?>
-        <!-- User management already receives live rows from PHP/PDO, so it does not get demo JSON.
-             This script only filters server-rendered users and prepares normal PHP forms. -->
+        <!-- This script only filters server-rendered users and prepares normal PHP forms. -->
         <script src="/assets/js/admin-users.js" defer></script>
-    <?php endif; ?>
-    <?php if ($currentRoleKey === 'teacher'): ?>
-        <!-- Keep teacher project and grading interactions in a focused script file. -->
-        <script src="/assets/js/teacher.js" defer></script>
     <?php endif; ?>
 </body>
 </html>

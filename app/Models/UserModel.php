@@ -58,6 +58,28 @@ class UserModel
         return $statement->fetchAll();
     }
 
+    /** Find a session account only when its database role matches the expected role. */
+    public function findByIdAndRole(int $id, string $role): ?array
+    {
+        if (!in_array($role, ['administrator', 'teacher', 'student'], true)) {
+            return null;
+        }
+
+        $statement = $this->connection->prepare(
+            'SELECT id, username, full_name, role
+             FROM users
+             WHERE id = :id AND role = :role
+             LIMIT 1',
+        );
+        $statement->execute([
+            'id' => $id,
+            'role' => $role,
+        ]);
+        $user = $statement->fetch();
+
+        return $user === false ? null : $user;
+    }
+
     /** Confirm that a submitted ID belongs to the expected account role. */
     public function hasRoleForId(int $id, string $role): bool
     {

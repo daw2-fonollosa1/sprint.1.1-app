@@ -1,6 +1,6 @@
 # MariaDB Connection with PDO
 
-This change adds a reusable PDO connection for the PHP application. The existing pages still use their sample data; they do not read or write database records yet.
+This document describes the reusable PDO connection used by the PHP application. Create-operation controllers and models now use it for inserts and for the small database reads needed by forms.
 
 ## Files
 
@@ -50,7 +50,7 @@ require_once dirname(__DIR__) . '/Core/Database.php';
 $connection = Database::getConnection();
 ```
 
-The current controllers and models are not changed to fetch database records in this issue.
+The create-operation controllers and models reuse this connection for user, project, evaluable-item, assignment, and grade inserts. They also use small reads to show saved project/item rows and to populate assignment and grade choices. Every write checks the server-side role session before using PDO.
 
 ## Check the connection
 
@@ -71,6 +71,7 @@ If it fails, it prints a short message asking you to check MariaDB, the PDO MySQ
 ## Outside this issue
 
 - The login still accepts prototype demo inputs; it does not authenticate against `users`.
-- Application pages still use temporary sample data and do not perform database CRUD.
-- Sessions, role-based access control, and persistent grading are not implemented.
+- Dashboards and most read-only role pages still use temporary sample data.
+- Real authentication and role-based access control are not implemented. Create handlers require a server-side session role, so writes are blocked with the current demo login.
+- Grade creation code exists, but the form cannot submit successfully until an authenticated teacher session is available.
 - Docker configuration is unchanged.

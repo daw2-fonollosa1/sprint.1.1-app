@@ -13,9 +13,13 @@ class UserModel
     // Administrators are intentionally excluded: this screen only manages staff and students.
     private const MANAGED_ROLES = ['teacher', 'student'];
 
-    /** Receive the already configured PDO connection instead of creating another one. */
-    public function __construct(private PDO $connection)
+    /** PDO connection shared by this model's SQL methods. */
+    private PDO $connection;
+
+    /** Receive the configured connection rather than opening a second one. */
+    public function __construct(PDO $connection)
     {
+        $this->connection = $connection;
     }
 
     /**
@@ -34,6 +38,39 @@ class UserModel
         $statement->execute(self::MANAGED_ROLES);
 
         return $statement->fetchAll();
+    }
+
+    /** Return only IDs and names for a role-specific dropdown; passwords are never selected. */
+    public function getUsersByRole(string $role): array
+    {
+        if (!in_array($role, self::MANAGED_ROLES, true)) {
+            return [];
+        }
+
+        $statement = $this->connection->prepare(
+            'SELECT id, username, full_name, role
+             FROM users
+             WHERE role = :role
+             ORDER BY full_name',
+        );
+        $statement->execute(['role' => $role]);
+
+        return $statement->fetchAll();
+    }
+
+    /** Confirm that a submitted ID belongs to the expected account role. */
+    public function hasRoleForId(int $id, string $role): bool
+    {
+        if (!in_array($role, self::MANAGED_ROLES, true)) {
+            return false;
+        }
+
+        $statement = $this->connection->prepare(
+            'SELECT id FROM users WHERE id = :id AND role = :role LIMIT 1',
+        );
+        $statement->execute(['id' => $id, 'role' => $role]);
+
+        return $statement->fetchColumn() !== false;
     }
 
     /**

@@ -38,6 +38,9 @@ $formUrl = '/?page=users&amp;role=admin&amp;filter=' . $escapeUserValue($activeF
     <?php if ($databaseError !== ''): ?>
         <div class="alert alert-danger" role="alert"><?= $escapeUserValue($databaseError) ?></div>
     <?php endif; ?>
+    <?php if ($adminUserPageData['accessError'] !== ''): ?>
+        <div class="alert alert-warning" role="alert"><?= $escapeUserValue($adminUserPageData['accessError']) ?></div>
+    <?php endif; ?>
 
     <div class="card border-0 shadow-sm">
         <div class="card-body">

@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 require_once dirname(__DIR__) . '/Core/Database.php';
+require_once dirname(__DIR__) . '/Core/RoleAuthorization.php';
 require_once dirname(__DIR__) . '/Models/UserModel.php';
 
 /**
@@ -22,6 +23,7 @@ class AdminUsersController
             'users' => [],
             'feedback' => $this->feedbackFromUrl(),
             'databaseError' => '',
+            'accessError' => '',
             'validationErrors' => [],
             'formValues' => [
                 'id' => '',
@@ -34,12 +36,35 @@ class AdminUsersController
             'activeFilter' => $this->requestedFilter(),
         ];
 
+        if (!RoleAuthorization::hasRole('administrator')) {
+            $state['accessError'] = 'Cal una sessió d’administrador autenticada al servidor. El login actual només permet previsualitzar les pantalles.';
+        }
+
+        // Reject an unauthenticated write before opening PDO. This makes the server-side
+        // role check the first decision for POST requests, even when MariaDB is unavailable.
+        if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && !RoleAuthorization::hasRole('administrator')) {
+            http_response_code(403);
+            $state['accessError'] = 'No s’ha pogut verificar el teu rol al servidor. Cal implementar l’autenticació abans de modificar usuaris.';
+
+            // The write is rejected, but keep the existing read-only user list visible when
+            // MariaDB is available so the denied form response is not mistaken for no users.
+            try {
+                $state['users'] = (new UserModel(Database::getConnection()))->getManagedUsers();
+            } catch (Throwable $error) {
+                error_log('Administrator user list read failed: ' . $error->getMessage());
+                $state['databaseError'] = 'No s’ha pogut carregar la llista d’usuaris.';
+            }
+
+            return $state;
+        }
+
         try {
             // Reuse the application's shared PDO factory and model for every request.
             $users = new UserModel(Database::getConnection());
 
             // GET displays the page. POST is used by the create, edit, and delete forms.
             if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
+                // At this point the server-side administrator session has already passed its check.
                 $this->handlePost($users, $state);
             }
 
@@ -260,11 +285,18 @@ class AdminUsersController
             return '';
         }
 
-        return match ($status) {
-            'created' => 'S’ha creat l’usuari correctament.',
-            'updated' => 'S’han desat els canvis de l’usuari.',
-            'deleted' => 'S’ha eliminat l’usuari i les assignacions i qualificacions vinculades.',
-            default => '',
-        };
+        if ($status === 'created') {
+            return 'S’ha creat l’usuari correctament.';
+        }
+
+        if ($status === 'updated') {
+            return 'S’han desat els canvis de l’usuari.';
+        }
+
+        if ($status === 'deleted') {
+            return 'S’ha eliminat l’usuari i les assignacions i qualificacions vinculades.';
+        }
+
+        return '';
     }
 }

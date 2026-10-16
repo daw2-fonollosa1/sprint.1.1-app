@@ -4,13 +4,13 @@ This repository contains the PHP application for the individual Sprint 1.1 proje
 
 ## Project status
 
-The current implementation provides server-rendered PHP pages, role-specific navigation previews, and Bootstrap 5. PDO create handlers are implemented for users, projects, evaluable items, project assignments, and individual grades. However, every database write requires an authenticated server-side session, and the demonstration login does not create one, so writes are blocked until authentication is implemented. The login and role selector do not provide real authentication or access control.
+The current implementation provides server-rendered PHP pages, role-specific navigation previews, and Bootstrap 5. Read operations load administrator, teacher, and student data from MariaDB through PDO. PDO create handlers are also present for users, projects, evaluable items, project assignments, and individual grades. The demonstration login does not create an authenticated server-side session, so role-filtered reads and all writes remain unavailable until authentication is implemented. The login and role selector do not provide real authentication or access control.
 
 ## Technology requirements
 
 - PHP without an application framework.
 - Object-oriented programming and the MVC pattern.
-- MariaDB access through PDO with prepared statements for the application's create operations.
+- MariaDB access through PDO, with prepared statements for queries that use request values.
 - Bootstrap 5 for the responsive interface.
 - Catalan text in the user interface.
 - English source code, code comments, and project documentation.
@@ -24,17 +24,18 @@ app/
 │   ├── AdminUsersController.php
 │   ├── CreateOperationsController.php
 │   ├── DashboardController.php
-│   └── LoginController.php
+│   ├── LoginController.php
+│   └── ReadOperationsController.php
 ├── Core/
 │   ├── Database.php
 │   └── RoleAuthorization.php
 ├── Models/
-│   ├── DemoData.php
 │   ├── EvaluableItemModel.php
 │   ├── GradeModel.php
 │   ├── ProjectAssignmentModel.php
 │   ├── ProjectModel.php
 │   ├── StudentDashboardData.php
+│   ├── TeacherDashboardData.php
 │   └── UserModel.php
 └── Views/
     ├── layouts/
@@ -82,7 +83,7 @@ README.md
 
 `public/` is the web document root. PHP views live under `app/Views/`; only the front controller and public assets should be directly served to the browser. Composer's `vendor/` directory is generated when dependencies are installed and is not committed.
 
-`DashboardController.php` selects the requested role and page. `DemoData.php` keeps the shared sample records in one place, and `StudentDashboardData.php` prepares the filtered project and grade information for the student views.
+`DashboardController.php` selects the requested page and checks the PHP session against the `users` table. `ReadOperationsController.php` gathers the database rows needed by that page, while `CreateOperationsController.php` handles create form submissions. `TeacherDashboardData.php` and `StudentDashboardData.php` prepare the related records for their role-specific views.
 
 ## Documentation
 
@@ -92,6 +93,7 @@ README.md
 - [Database schema](docs/database-schema.md)
 - [Database connection](docs/database-connection.md)
 - [Create operations](docs/create-operations.md)
+- [Read operations](docs/read-operations.md)
 - [Administrator interface prototype](docs/administrator-interface.md)
 - [Administrator user management](docs/administrator-user-management.md)
 - [Teacher interface prototype](docs/teacher-interface.md)

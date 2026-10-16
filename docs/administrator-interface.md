@@ -1,60 +1,39 @@
-# Administrator Interface Prototype
+# Administrator Interface
 
 ## Scope
 
-The administrator area contains a dashboard and pages for users, projects, and evaluable items. The user page reads teachers and students from MariaDB. The project and evaluable-item pages now create database records and provide the assignment forms. Their update and delete operations are not part of the current create-only work.
+The administrator pages read users, projects, evaluable items, assignments, and dashboard totals from MariaDB. The existing PHP forms for creating and managing data remain separate from this read work. All page navigation and HTML rendering are handled by PHP.
 
-PHP renders each page. Forms submit to PHP and use PDO prepared statements. The current demo login does not create an authenticated server-side session, so every data-changing POST is rejected until authentication is implemented. JavaScript does not save records.
-
-Visible interface text is in Catalan. Source code, comments, and this document are in English.
+The application checks the administrator's PHP session and confirms the account and role in the `users` table before it loads administrator data. The demonstration login does not create that session, so the pages show an access message until authentication is implemented.
 
 ## Files
 
-- `app/Controllers/DashboardController.php` — Defines role navigation, selects views, and calls the administrator user controller for the user page.
-- `app/Controllers/AdminUsersController.php` — Validates account forms, calls the user model, redirects after successful actions, and returns safe feedback.
-- `app/Models/DemoData.php` — Keeps sample users, projects, evaluable items, and grades for the dashboard and demonstration pages.
-- `app/Models/UserModel.php` — Loads, creates, updates, and deletes teacher/student records with prepared PDO statements.
-- `app/Controllers/CreateOperationsController.php` — Validates create forms, checks session roles, and prepares form choices.
-- `app/Models/ProjectModel.php`, `EvaluableItemModel.php`, `ProjectAssignmentModel.php`, and `GradeModel.php` — Add the insert methods and minimal choice/list reads described in `docs/create-operations.md`.
-- `app/Views/layouts/main.php` — Includes shared navigation and assets. It sends sample JSON only to sections that still use the browser demonstrations.
-- `app/Views/pages/admin/dashboard.php` — Shows sample totals and a short list of projects.
-- `app/Views/pages/admin/users.php` — Renders users from MariaDB and provides role filters and create, edit, and delete forms.
-- `app/Views/pages/admin/projects.php` — Provides the PDO project form, persistent list, and create-only assignment forms.
-- `app/Views/pages/admin/evaluable_items.php` — Provides the PDO item form and persistent list.
-- `public/assets/js/admin-users.js` — Filters the PHP-rendered rows, opens the account modal, and confirms delete submissions. PHP performs all database changes.
-- `public/assets/js/admin-common.js` — Remains from the earlier browser demonstration and is no longer loaded on the database-backed project/item pages.
-- `docs/administrator-user-management.md` — Explains the persistent user-management feature and its tests.
-- `README.md` — Describes the current project status and documentation.
+- `app/Controllers/DashboardController.php` — Selects the requested page, checks the session role against MariaDB, and prepares dashboard data.
+- `app/Controllers/AdminUsersController.php` — Loads teacher and student rows for the administrator's user table.
+- `app/Controllers/ReadOperationsController.php` — Loads the existing project rows and current project assignments for the administrator page.
+- `app/Controllers/CreateOperationsController.php` — Validates and processes project, item, and assignment creation forms.
+- `app/Models/UserModel.php` — Reads user lists and verifies that a session user has the expected database role.
+- `app/Models/ProjectModel.php` — Reads project rows.
+- `app/Models/EvaluableItemModel.php` — Reads evaluable-item rows.
+- `app/Models/ProjectAssignmentModel.php` — Reads the teachers, students, and items assigned to each project.
+- `app/Models/GradeModel.php` — Counts individual grades for the administrator dashboard.
+- `app/Views/layouts/main.php` — Shows safe access or database messages and includes the selected PHP view.
+- `app/Views/pages/admin/dashboard.php` — Displays current project, user, item, and grade counts and a project list.
+- `app/Views/pages/admin/users.php` — Displays database users with the existing role filters.
+- `app/Views/pages/admin/projects.php` — Displays projects and the names assigned to each one.
+- `app/Views/pages/admin/evaluable_items.php` — Displays evaluable items from MariaDB.
+- `docs/read-operations.md` — Explains the complete read flow and testing steps.
 
-## Page and navigation structure
+## How administrator data is loaded
 
-The shared navigation is configured in `DashboardController`. Selecting **Usuaris** sends a normal browser request such as `/?page=users&role=admin`. The controller calls `AdminUsersController`, which loads users through `UserModel` and then includes the user view inside the shared layout. JavaScript does not take over page navigation or save account changes.
+`public/index.php` starts a PHP session and sends the request to `DashboardController`. The controller checks the session role and then checks that the same user ID and role exist in MariaDB. It does not authorize a page from the `role` URL value.
 
-## Data sources
+For the dashboard, the controller calls the existing PDO models. The project, teacher, student, and item lists provide the displayed totals. `GradeModel` counts saved individual grade rows. On the project page, `ProjectAssignmentModel` loads assignment names from the three relationship tables.
 
-The user-management page reads teacher and student rows from the `users` table. It does not list or edit the administrator account. The database schema has `username`, `full_name`, `password_hash`, and `role`; it has no group field, so this form does not collect or store a student group. New passwords are stored as hashes.
+Database values are escaped before PHP places them in HTML. Database errors are written to the server log; the page shows a general Catalan message.
 
-`DemoData` still supplies sample data for dashboards and teacher/student previews. The admin project and item tables now read database rows, but the surrounding dashboards have not been converted from their sample data.
+## Test data and limitations
 
-## User create, edit, and delete
+`database/seed.sql` contains development records for one administrator, two teachers, two students, projects, items, assignments, and grades. The normal login is still only a role preview and does not authenticate these records. Do not use the URL role selector as a substitute for a verified PHP session.
 
-The create and edit buttons open one Bootstrap modal. Its normal POST form sends the action and fields to PHP. `AdminUsersController` checks required fields, schema length limits, allowed teacher/student roles, duplicate usernames, and role changes for users already assigned to projects. `UserModel` runs prepared statements to insert or update the row. A blank password on edit keeps the existing hash. The server now requires an authenticated administrator session before processing a POST; the demo login does not create one, so the forms currently show an access error.
-
-Deleting a teacher or student removes that user row. The schema's `ON DELETE CASCADE` rules also remove the user's project assignments and any grades linked through those assignments. The page asks for confirmation and explains this effect.
-
-The login and role selector are still demonstrations. The `role=admin` URL is not authentication or access control. Project, item, assignment, and grade creation details are in `docs/create-operations.md`.
-
-## Try the user-management interactions
-
-1. Configure `.env`, create the database with `database/schema.sql`, and load `database/seed.sql`. Make sure PHP has the `pdo_mysql` extension and that `php tests/check_database_connection.php` succeeds.
-2. Start PHP with `php -S 127.0.0.1:8000 -t public` and open `http://127.0.0.1:8000/?page=users&role=admin`.
-3. Switch between **Professorat** and **Alumnat** and search for an existing account.
-4. Confirm the user list is rendered from MariaDB when PDO can connect.
-5. Submit any create/edit/delete form using the demo login. PHP should return HTTP 403 and explain that a server-side authenticated administrator session is required.
-6. After a future login feature populates a verified session, run the create, invalid-field, edit, and delete checks from `docs/administrator-user-management.md`.
-
-Use a disposable development database for these steps. Deleting existing assigned accounts also deletes their linked assignments and grades.
-
-## Limitations
-
-PDO create handlers now exist for users, projects, items, assignments, and grades. The demonstration login still does not authenticate or populate the server session, so writes are blocked. Dashboards and other read views still use sample data. Database failures show a general Catalan message; technical details are written only to the server log. See `docs/create-operations.md` for the operation details and current blockers.
+Configure MariaDB and `pdo_mysql`, load `database/schema.sql` and `database/seed.sql`, and implement a login that stores the verified user's ID and database role in `$_SESSION['user']` before expecting the administrator screens to display records.

@@ -7,13 +7,14 @@ This change adds PHP/PDO insert operations for users, projects, evaluable items,
 - `public/index.php` starts a PHP session before dispatching the request.
 - `app/Core/RoleAuthorization.php` reads a verified user ID and role from `$_SESSION['user']`. It never trusts `role` from the URL or a hidden form input.
 - `app/Controllers/CreateOperationsController.php` validates project, item, assignment, and grade forms, checks permissions, and handles feedback and redirects.
+- `app/Controllers/ReadOperationsController.php` loads the projects, users, items, and grade form choices shown beside those forms.
 - `app/Controllers/AdminUsersController.php` now requires a server-side administrator role before accepting any user-management POST action.
 - `app/Controllers/DashboardController.php` sends the relevant admin and teacher forms through the create controller.
-- `app/Models/UserModel.php` adds role-specific reads for assignment choices. Its existing create method still hashes account passwords.
+- `app/Models/UserModel.php` provides the user operations used by the controllers. Its create method hashes account passwords.
 - `app/Models/ProjectModel.php` reads project lists and inserts projects.
 - `app/Models/EvaluableItemModel.php` reads item lists and inserts items.
 - `app/Models/ProjectAssignmentModel.php` creates teacher, student, and item links.
-- `app/Models/GradeModel.php` reads only the dropdown choices needed by a teacher and inserts one individual grade.
+- `app/Models/GradeModel.php` provides the teacher's grade form choices and inserts one individual grade.
 - `app/Views/pages/admin/projects.php` contains the project creation form, database project list, and three assignment forms.
 - `app/Views/pages/admin/evaluable_items.php` contains the item creation form and database list.
 - `app/Views/pages/admin/users.php` shows the access message when the server cannot verify an administrator.
@@ -27,7 +28,7 @@ This change adds PHP/PDO insert operations for users, projects, evaluable items,
 ## How a request reaches PHP and PDO
 
 1. The browser submits a normal `POST` form to the public front controller, `public/index.php`.
-2. `DashboardController` selects the existing PHP page and calls the relevant controller.
+2. `DashboardController` calls `CreateOperationsController` to process a create form submission and `ReadOperationsController` to load the rows shown by the PHP page. The view receives both results.
 3. The controller reads form values, checks required fields, formats, IDs, and the role from the PHP session.
 4. A model uses the existing `Database::getConnection()` PDO connection. Values are passed to `prepare()` and `execute()` instead of being joined into SQL strings.
 5. On success, PHP responds with a `303` redirect. The next page request reads the database again, so a refresh does not repeat the insert.

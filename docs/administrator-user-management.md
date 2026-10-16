@@ -5,6 +5,7 @@ The administrator page reads teacher and student accounts from MariaDB and conta
 ## Files
 
 - `app/Controllers/AdminUsersController.php` reads form values, validates account data, and calls the user model.
+- `app/Controllers/ReadOperationsController.php` loads the teacher and student list before the page is rendered.
 - `app/Models/UserModel.php` reads and changes the `users` table with PDO prepared statements. It hashes passwords with `password_hash()` and never returns password hashes to the view.
 - `app/Views/pages/admin/users.php` renders the database results and the create, edit, and delete forms.
 - `public/assets/js/admin-users.js` filters rows, opens the shared modal, and asks for delete confirmation. JavaScript does not save account data.
@@ -13,7 +14,7 @@ The administrator page reads teacher and student accounts from MariaDB and conta
 
 ## Request and validation flow
 
-The browser submits a normal POST request to `/?page=users&role=admin`. `DashboardController` calls `AdminUsersController`, which checks the session role before processing any action. The URL's `role=admin` value is only a page preview; it is not used to authorize the request. When an authenticated administrator session exists, PHP validates the fields and calls `UserModel`, which uses PDO prepared statements. Successful writes redirect back to the page.
+The browser submits a normal POST request to `/?page=users&role=admin`. `DashboardController` verifies the session and database role, then `ReadOperationsController` loads the user list. `AdminUsersController` checks the session role before processing any submitted action. The URL's `role=admin` value is only a page preview; it is not used to authorize the request. When an authenticated administrator session exists, PHP validates the fields and calls `UserModel`, which uses PDO prepared statements. Successful writes redirect back to the page.
 
 The schema provides `username`, `full_name`, `password_hash`, and `role`. The page only creates teachers and students. It requires a password on account creation and stores only its hash. A blank password while editing means keep the existing hash. The student group is not stored because the schema has no group column.
 
@@ -21,7 +22,7 @@ The controller checks required values, database length limits, allowed roles, du
 
 ## Current authentication blocker
 
-The demonstration login accepts sample names and does not read the `users` table or create a server-side identity. Therefore, the create, edit, and delete POST forms receive HTTP 403. The page can still be viewed when the database is available. A future login must verify a password hash and set a session identity such as `$_SESSION['user'] = ['id' => 1, 'role' => 'administrator']`; the role must come from the verified database row.
+The demonstration login accepts sample names and does not read the `users` table or create a server-side identity. Therefore, the create, edit, and delete POST forms receive HTTP 403, and the shared layout shows an access message instead of the administrator data page. A future login must verify a password hash and set a session identity such as `$_SESSION['user'] = ['id' => 1, 'role' => 'administrator']`; the role must come from the verified database row.
 
 ## Manual check
 

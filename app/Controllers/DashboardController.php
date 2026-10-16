@@ -2,282 +2,275 @@
 
 declare(strict_types=1);
 
-require_once dirname(__DIR__) . '/Models/DemoData.php';
-require_once dirname(__DIR__) . '/Models/StudentDashboardData.php';
+require_once dirname(__DIR__) . '/Core/Database.php';
+require_once dirname(__DIR__) . '/Core/RoleAuthorization.php';
+require_once __DIR__ . '/ReadOperationsController.php';
+require_once dirname(__DIR__) . '/Models/UserModel.php';
 
+/** Selects a role page and provides it with database data. */
 class DashboardController
 {
-    // Each array key is a short section identifier used in the URL, such as ?page=projects.
-    // Its title and description are the Catalan text shown by the shared placeholder view.
-    private const PAGES = [
-        'dashboard' => [
-            'title' => 'Tauler',
-            'description' => 'Resum de l’activitat i de les dades de tota l’aplicació.',
-        ],
-        'projects' => [
-            'title' => 'Projectes',
-            'description' => 'Consulta els projectes assignats i obri’n els detalls.',
-        ],
-        'project-details' => [
-            'title' => 'Detalls del projecte',
-            'description' => 'Consulta l’alumnat i els ítems avaluables associats al projecte.',
-        ],
-        'users' => [
-            'title' => 'Usuaris',
-            'description' => 'Aquí es gestionaran els comptes de professorat i alumnat.',
-        ],
-        'evaluable-items' => [
-            'title' => 'Ítems avaluables',
-            'description' => 'Aquí es gestionaran els ítems que es poden assignar als projectes.',
-        ],
-        'grades' => [
-            'title' => 'Qualificacions',
-            'description' => 'Aquí es consultaran o introduiran les qualificacions segons el rol seleccionat.',
-        ],
-        'students' => [
-            'title' => 'Alumnat',
-            'description' => 'Consulta l’alumnat associat als teus projectes.',
-        ],
-    ];
-
-    // This table controls which navigation links are displayed in the prototype for each role.
-    // It is presentation data only; changing a URL does not create real role-based security.
+    // These keys control page links. They are display choices, not authenticated roles.
     private const ROLES = [
         'admin' => [
             'label' => 'Administrador',
+            'databaseRole' => 'administrator',
             'pages' => ['dashboard', 'projects', 'users', 'evaluable-items', 'grades'],
         ],
         'teacher' => [
             'label' => 'Professor/a',
+            'databaseRole' => 'teacher',
             'pages' => ['dashboard', 'projects', 'project-details', 'students', 'grades'],
         ],
         'student' => [
             'label' => 'Alumne/a',
+            'databaseRole' => 'student',
             'pages' => ['dashboard', 'projects', 'project-details', 'grades'],
         ],
     ];
 
+    // Keep page titles and navigation labels together so the views do not invent routes.
+    private const PAGE_TITLES = [
+        'dashboard' => 'Tauler',
+        'projects' => 'Projectes',
+        'project-details' => 'Detalls del projecte',
+        'users' => 'Usuaris',
+        'evaluable-items' => 'Ítems avaluables',
+        'grades' => 'Qualificacions',
+        'students' => 'Alumnat',
+    ];
+
     public function index(): void
     {
-        // Read all shared example records once. The data class keeps their definitions
-        // together, while this controller decides which role receives each part.
-        $demoData = DemoData::all();
-
-        // Read the role from the URL. Use the admin preview when it is missing or unknown,
-        // so the page always has a valid role menu to display.
-        $requestedRole = $_GET['role'] ?? 'admin';
-        $currentRoleKey = is_string($requestedRole) && isset(self::ROLES[$requestedRole])
-            ? $requestedRole
-            : 'admin';
+        $currentRoleKey = $this->requestedRole();
         $currentRole = self::ROLES[$currentRoleKey];
+        $pageKey = $this->requestedPage();
+        $pageWasFound = in_array($pageKey, $currentRole['pages'], true);
 
-        // The selected page is also a URL value, so check its type before using it as an array key.
-        $requestedPage = $_GET['page'] ?? 'dashboard';
-        $pageKey = is_string($requestedPage) ? $requestedPage : 'dashboard';
-        $isPageAvailable = in_array($pageKey, $currentRole['pages'], true);
-
-        // A section must be listed for the selected preview role. Unknown or unavailable sections
-        // get an HTTP 404 response and a friendly page message instead of an undefined array lookup.
-        if (!$isPageAvailable) {
+        if (!$pageWasFound) {
             http_response_code(404);
             $pageKey = 'dashboard';
             $page = [
                 'title' => 'Pàgina no trobada',
-                'description' => 'La secció no existeix o no forma part d’aquesta previsualització.',
+                'description' => 'La secció no existeix o no està disponible per a aquest rol.',
             ];
         } else {
-            $page = self::PAGES[$pageKey];
-        }
-
-        // Convert this role's section keys into link data used by navigation.php.
-        $navigationItems = [];
-
-        foreach ($currentRole['pages'] as $availablePageKey) {
-            // Project details are opened from a project row, so they are not a top-level menu link.
-            if ($availablePageKey === 'project-details') {
-                continue;
-            }
-
-            $navigationItems[] = [
-                'key' => $availablePageKey,
-                'title' => self::PAGES[$availablePageKey]['title'],
+            $page = [
+                'title' => self::PAGE_TITLES[$pageKey],
+                'description' => '',
             ];
         }
 
-        // Build the labels for the role-preview dropdown shown in the shared navigation.
-        $roleOptions = [];
+        $navigationItems = $this->navigationItems($currentRole['pages']);
+        $roleOptions = $this->roleOptions();
+        $pageView = $this->viewFor($currentRoleKey, $pageKey);
 
-        foreach (self::ROLES as $roleKey => $roleData) {
-            $roleOptions[$roleKey] = $roleData['label'];
-        }
-
-        // Start with the shared placeholder, then select a dedicated view for each implemented role.
-        $pageView = '/pages/placeholder.php';
-        $adminDemoData = null;
+        // Start with empty values so each view has a predictable shape.
+        $adminDashboardData = ['projects' => [], 'teachers' => [], 'students' => [], 'items' => [], 'gradeCount' => 0];
         $adminUserPageData = null;
         $createOperationsData = null;
-        $teacherDemoData = null;
-        $studentDemoData = null;
+        $teacherData = [
+            'projects' => [],
+            'students' => [],
+            'summary' => ['gradeCount' => 0, 'pendingGradeCount' => 0],
+        ];
+        $selectedProject = null;
+        $studentData = $this->emptyStudentData();
+        $studentGradeRows = [];
+        $visibleStudentGradeRows = [];
+        $selectedGradeProjectId = '';
+        $assignedItemCount = 0;
+        $gradedItemCount = 0;
+        $pendingItemCount = 0;
+        $readAccessError = '';
+        $readDatabaseError = '';
 
-        if ($currentRoleKey === 'admin') {
-            $adminDemoData = [
-                'users' => $demoData['users'],
-                'projects' => $demoData['projects'],
-                'items' => $demoData['items'],
-            ];
+        // The role in the URL only chooses a page preview. Read records only when a
+        // server-side session has the same role and its user exists in MariaDB.
+        $sessionUser = RoleAuthorization::currentUser();
 
-            // The user-management section is the one administrator page backed by MariaDB.
-            // Its controller receives POST actions and returns fresh users plus any feedback
-            // so the same shared layout can render the result in the dedicated PHP view.
-            if ($pageKey === 'users') {
-                require_once dirname(__DIR__) . '/Controllers/AdminUsersController.php';
-                $adminUserPageData = (new AdminUsersController())->handle();
-            }
+        if ($sessionUser === null) {
+            http_response_code(401);
+            $readAccessError = 'Cal iniciar una sessió autenticada per consultar les dades de l’aplicació.';
+        } elseif ($sessionUser['role'] !== $currentRole['databaseRole']) {
+            http_response_code(403);
+            $readAccessError = 'El compte autenticat no té accés a la secció seleccionada.';
+        } else {
+            try {
+                $connection = Database::getConnection();
+                $users = new UserModel($connection);
+                $databaseUser = $users->findByIdAndRole($sessionUser['id'], $currentRole['databaseRole']);
 
-            // These administrator pages use database-backed create-only forms. The
-            // controller also prepares the small lists needed by project assignments.
-            if (in_array($pageKey, ['projects', 'evaluable-items'], true)) {
-                require_once dirname(__DIR__) . '/Controllers/CreateOperationsController.php';
-                $createOperationsData = (new CreateOperationsController())->handle($pageKey, $currentRoleKey);
-            }
+                if ($databaseUser === null) {
+                    http_response_code(403);
+                    $readAccessError = 'No s’ha pogut verificar el compte autenticat a la base de dades.';
+                } else {
+                    // Write forms keep their own controller and return only messages and submitted values.
+                    $createState = null;
+                    if ($this->isCreateFormPage($currentRoleKey, $pageKey)) {
+                        require_once __DIR__ . '/CreateOperationsController.php';
+                        $createState = (new CreateOperationsController())->handle($pageKey, $currentRoleKey);
+                    }
 
-            // Use a simple switch so it is clear which administrator URL loads each view.
-            switch ($pageKey) {
-                case 'dashboard':
-                    $pageView = '/pages/admin/dashboard.php';
-                    break;
-                case 'users':
-                    $pageView = '/pages/admin/users.php';
-                    break;
-                case 'projects':
-                    $pageView = '/pages/admin/projects.php';
-                    break;
-                case 'evaluable-items':
-                    $pageView = '/pages/admin/evaluable_items.php';
-                    break;
-                default:
-                    $pageView = '/pages/placeholder.php';
-            }
-        }
+                    // One controller prepares the records displayed by the current page.
+                    $readData = (new ReadOperationsController())->handle(
+                        $connection,
+                        $currentRoleKey,
+                        $pageKey,
+                        $sessionUser['id'],
+                        $this->requestedProjectId(),
+                    );
 
-        if ($currentRoleKey === 'teacher') {
-            // The prototype login has one sample teacher; real account lookup will replace this ID later.
-            $teacherId = 'teacher-1';
-            $teacherProjects = array_values(array_filter(
-                $demoData['projects'],
-                static fn (array $project): bool => in_array($teacherId, $project['teacherIds'], true),
-            ));
-            $teacherProjectIds = array_column($teacherProjects, 'id');
-            $requestedProjectId = $_GET['project_id'] ?? '';
-            $selectedProjectId = is_string($requestedProjectId) && in_array($requestedProjectId, $teacherProjectIds, true)
-                ? $requestedProjectId
-                : ($teacherProjects[0]['id'] ?? '');
-            $selectedProject = null;
+                    $adminDashboardData = $readData['adminDashboardData'];
+                    $teacherData = $readData['teacherData'];
+                    $selectedProject = $readData['selectedProject'];
+                    $studentData = $readData['studentData'];
 
-            foreach ($teacherProjects as $project) {
-                if ($project['id'] === $selectedProjectId) {
-                    $selectedProject = $project;
-                    break;
+                    if ($createState !== null) {
+                        // Existing views use one array for their read lists and create feedback.
+                        $createOperationsData = array_merge($readData['formData'], $createState);
+                    }
+
+                    if ($currentRoleKey === 'admin' && $pageKey === 'users') {
+                        require_once __DIR__ . '/AdminUsersController.php';
+                        $adminUserPageData = (new AdminUsersController())->handle($readData['managedUsers']);
+                    }
+
+                    $studentGradeRows = $studentData['gradeRows'];
+                    $visibleStudentGradeRows = $studentData['visibleGradeRows'];
+                    $selectedGradeProjectId = $studentData['selectedGradeProjectId'];
+                    $assignedItemCount = $studentData['assignedItemCount'];
+                    $gradedItemCount = $studentData['gradedItemCount'];
+                    $pendingItemCount = $studentData['pendingItemCount'];
+
+                    if ($currentRoleKey === 'student' && $studentData['student'] === null) {
+                        http_response_code(403);
+                        $readAccessError = 'El compte autenticat no és un alumne vàlid.';
+                    }
+
+                    if ($pageKey === 'project-details' && $selectedProject === null && $currentRoleKey === 'teacher') {
+                        http_response_code(404);
+                    }
+
+                    if ($pageKey === 'project-details' && $studentData['selectedProject'] === null && $currentRoleKey === 'student') {
+                        http_response_code(404);
+                    }
                 }
-            }
-
-            $selectedStudentId = '';
-            $requestedStudentId = $_GET['student_id'] ?? '';
-            if ($selectedProject !== null && is_string($requestedStudentId) && in_array($requestedStudentId, $selectedProject['studentIds'], true)) {
-                $selectedStudentId = $requestedStudentId;
-            }
-
-            $selectedItemId = '';
-            $requestedItemId = $_GET['item_id'] ?? '';
-            if ($selectedProject !== null && is_string($requestedItemId) && in_array($requestedItemId, $selectedProject['itemIds'], true)) {
-                $selectedItemId = $requestedItemId;
-            }
-
-            $teacherDemoData = [
-                'teacherId' => $teacherId,
-                'users' => $demoData['users'],
-                'projects' => $teacherProjects,
-                'items' => $demoData['items'],
-                'grades' => $demoData['grades'],
-            ];
-
-            // Project creation and grade entry use the existing PDO setup. The
-            // controller checks server-side session roles before every database write.
-            if (in_array($pageKey, ['projects', 'grades'], true)) {
-                require_once dirname(__DIR__) . '/Controllers/CreateOperationsController.php';
-                $createOperationsData = (new CreateOperationsController())->handle($pageKey, $currentRoleKey);
-            }
-
-            // Each teacher section is a separate PHP view rendered by the shared layout.
-            switch ($pageKey) {
-                case 'dashboard':
-                    $pageView = '/pages/teacher/dashboard.php';
-                    break;
-                case 'projects':
-                    $pageView = '/pages/teacher/projects.php';
-                    break;
-                case 'project-details':
-                    $pageView = '/pages/teacher/project_details.php';
-                    break;
-                case 'students':
-                    $pageView = '/pages/teacher/students.php';
-                    break;
-                case 'grades':
-                    $pageView = '/pages/teacher/grades.php';
-                    break;
-                default:
-                    $pageView = '/pages/placeholder.php';
+            } catch (Throwable $error) {
+                // Keep SQL errors in the server log and show only a safe Catalan message.
+                error_log('Application read failed: ' . $error->getMessage());
+                $readDatabaseError = 'No s’han pogut carregar les dades. Revisa la connexió amb la base de dades.';
             }
         }
 
-        if ($currentRoleKey === 'student') {
-            // This preview always uses the sample student Marc. The model prepares only
-            // his project and grade data before the layout includes a student view.
-            $requestedProjectId = $_GET['project_id'] ?? null;
-            $studentData = StudentDashboardData::build(
-                'student-1',
-                $demoData,
-                is_string($requestedProjectId) ? $requestedProjectId : null,
-            );
-
-            // A missing or unassigned project must not render a different student's details.
-            if ($pageKey === 'project-details' && $studentData['selectedProject'] === null) {
-                http_response_code(404);
-            }
-
-            $studentDemoData = [
-                'student' => $studentData['student'],
-                'projects' => $studentData['projects'],
-                'gradeRows' => $studentData['gradeRows'],
-            ];
-            $selectedProject = $studentData['selectedProject'];
-            $studentGradeRows = $studentData['gradeRows'];
-            $visibleStudentGradeRows = $studentData['visibleGradeRows'];
-            $selectedGradeProjectId = $studentData['selectedGradeProjectId'];
-            $gradedItemCount = $studentData['gradedItemCount'];
-            $pendingItemCount = $studentData['pendingItemCount'];
-
-            // Keep student navigation server-rendered by choosing a PHP view for the page.
-            switch ($pageKey) {
-                case 'dashboard':
-                    $pageView = '/pages/student/dashboard.php';
-                    break;
-                case 'projects':
-                    $pageView = '/pages/student/projects.php';
-                    break;
-                case 'project-details':
-                    $pageView = '/pages/student/project_details.php';
-                    break;
-                case 'grades':
-                    $pageView = '/pages/student/grades.php';
-                    break;
-                default:
-                    $pageView = '/pages/placeholder.php';
-            }
-        }
-
-        // PHP includes the layout in this scope, so the layout and child views can read
-        // these variables without another request or JavaScript-based page routing.
+        // Include the selected PHP view inside the shared layout; navigation stays server-rendered.
         require dirname(__DIR__) . '/Views/layouts/main.php';
+    }
+
+    /** Identify pages whose existing PHP forms can create database records. */
+    private function isCreateFormPage(string $roleKey, string $pageKey): bool
+    {
+        return ($roleKey === 'admin' && in_array($pageKey, ['projects', 'evaluable-items'], true))
+            || ($roleKey === 'teacher' && in_array($pageKey, ['projects', 'grades'], true));
+    }
+
+    /** Choose one of the three navigation previews without treating it as permission. */
+    private function requestedRole(): string
+    {
+        $role = $_GET['role'] ?? 'admin';
+
+        return is_string($role) && isset(self::ROLES[$role]) ? $role : 'admin';
+    }
+
+    /** Return the requested page key, or the dashboard as a safe default. */
+    private function requestedPage(): string
+    {
+        $page = $_GET['page'] ?? 'dashboard';
+
+        return is_string($page) ? $page : 'dashboard';
+    }
+
+    /** Read a project filter only when it is a simple string value. */
+    private function requestedProjectId(): ?string
+    {
+        $projectId = $_GET['project_id'] ?? null;
+
+        // Keep the selected project after an invalid teacher grade submission.
+        if ($projectId === null && ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
+            $projectId = $_POST['project_id'] ?? null;
+        }
+
+        return is_string($projectId) ? $projectId : null;
+    }
+
+    /** Build the shared role dropdown labels. */
+    private function roleOptions(): array
+    {
+        $options = [];
+
+        foreach (self::ROLES as $roleKey => $role) {
+            $options[$roleKey] = $role['label'];
+        }
+
+        return $options;
+    }
+
+    /** Build the current role's menu and leave project details as a contextual link. */
+    private function navigationItems(array $pageKeys): array
+    {
+        $items = [];
+
+        foreach ($pageKeys as $pageKey) {
+            if ($pageKey !== 'project-details') {
+                $items[] = ['key' => $pageKey, 'title' => self::PAGE_TITLES[$pageKey]];
+            }
+        }
+
+        return $items;
+    }
+
+    /** Map a role and page to the PHP template that renders it. */
+    private function viewFor(string $role, string $page): string
+    {
+        $views = [
+            'admin' => [
+                'dashboard' => '/pages/admin/dashboard.php',
+                'projects' => '/pages/admin/projects.php',
+                'users' => '/pages/admin/users.php',
+                'evaluable-items' => '/pages/admin/evaluable_items.php',
+            ],
+            'teacher' => [
+                'dashboard' => '/pages/teacher/dashboard.php',
+                'projects' => '/pages/teacher/projects.php',
+                'project-details' => '/pages/teacher/project_details.php',
+                'students' => '/pages/teacher/students.php',
+                'grades' => '/pages/teacher/grades.php',
+            ],
+            'student' => [
+                'dashboard' => '/pages/student/dashboard.php',
+                'projects' => '/pages/student/projects.php',
+                'project-details' => '/pages/student/project_details.php',
+                'grades' => '/pages/student/grades.php',
+            ],
+        ];
+
+        return $views[$role][$page] ?? '/pages/placeholder.php';
+    }
+
+    /** Keep student view variables empty while an unauthenticated request is blocked. */
+    private function emptyStudentData(): array
+    {
+        return [
+            'student' => null,
+            'projects' => [],
+            'gradeRows' => [],
+            'visibleGradeRows' => [],
+            'filterError' => '',
+            'selectedProject' => null,
+            'selectedGradeProjectId' => '',
+            'assignedItemCount' => 0,
+            'gradedItemCount' => 0,
+            'pendingItemCount' => 0,
+        ];
     }
 }

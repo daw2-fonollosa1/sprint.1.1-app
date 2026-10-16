@@ -6,8 +6,24 @@ $escapeGradeValue = static fn (string|int $value): string => htmlspecialchars((s
 $operationData = $createOperationsData;
 $selectedProjectId = $operationData['selectedProjectId'];
 $submitted = $operationData['submitted'];
-$selectedStudentId = (string) ($submitted['student_id'] ?? ($operationData['gradeStudents'][0]['id'] ?? ''));
-$selectedItemId = (string) ($submitted['item_id'] ?? ($operationData['gradeItems'][0]['id'] ?? ''));
+$requestedStudentId = $submitted['student_id'] ?? ($_GET['student_id'] ?? '');
+$requestedItemId = $submitted['item_id'] ?? ($_GET['item_id'] ?? '');
+$selectedStudentId = (string) ($operationData['gradeStudents'][0]['id'] ?? '');
+$selectedItemId = (string) ($operationData['gradeItems'][0]['id'] ?? '');
+
+// Keep a requested value only when it is one of the database choices for this project.
+foreach ($operationData['gradeStudents'] as $student) {
+    if (is_string($requestedStudentId) && (string) $student['id'] === $requestedStudentId) {
+        $selectedStudentId = $requestedStudentId;
+        break;
+    }
+}
+foreach ($operationData['gradeItems'] as $item) {
+    if (is_string($requestedItemId) && (string) $item['id'] === $requestedItemId) {
+        $selectedItemId = $requestedItemId;
+        break;
+    }
+}
 $selectedProject = null;
 foreach ($operationData['teacherProjects'] as $project) {
     if ((string) $project['id'] === $selectedProjectId) {
@@ -95,5 +111,5 @@ foreach ($operationData['teacherProjects'] as $project) {
         </div>
     </form>
 
-    <div class="alert alert-info mt-4 mb-0" role="status">Aquesta pantalla només crea qualificacions. La consulta de notes i el càlcul de mitjanes queden fora d’aquest Issue.</div>
+    <div class="alert alert-info mt-4 mb-0" role="status">Cada qualificació es guarda com una nota individual del docent seleccionat.</div>
 </section>

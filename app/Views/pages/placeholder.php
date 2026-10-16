@@ -14,9 +14,9 @@
         <span class="badge rounded-pill text-bg-light border">Estructura inicial</span>
     </div>
 
-    <!-- Keep the prototype limitation visible after navigation, not only on the login page. -->
+    <!-- Explain that this individual section has not been implemented yet. -->
     <div class="alert alert-info" role="status">
-        Aquesta és una demostració. L’inici de sessió i els permisos no són reals, i les dades no es desen.
+        La sessió i el rol s’han verificat. Aquesta secció encara està pendent d’implementar.
     </div>
 
     <!-- This card marks where future section-specific content will be placed. -->

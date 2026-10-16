@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-/** Reads grade-form choices and inserts one teacher's individual grade. */
+/** Reads grade-form choices and manages individual teacher grade rows. */
 class GradeModel
 {
     private PDO $connection;
@@ -57,6 +57,41 @@ class GradeModel
         $statement->execute(['project_id' => $projectId]);
 
         return $statement->fetchAll();
+    }
+
+    /** Return the signed-in teacher's grades for one selected project. */
+    public function getGradesForTeacherProject(int $teacherId, int $projectId): array
+    {
+        $statement = $this->connection->prepare(
+            'SELECT grades.id, grades.grade_value, projects.id AS project_id,
+                    projects.code AS project_code, projects.name AS project_name,
+                    students.full_name AS student_name,
+                    evaluable_items.code AS item_code, evaluable_items.name AS item_name
+             FROM grades
+             INNER JOIN projects ON projects.id = grades.project_id
+             INNER JOIN users AS students ON students.id = grades.student_id
+             INNER JOIN evaluable_items ON evaluable_items.id = grades.evaluable_item_id
+             WHERE grades.teacher_id = :teacher_id AND grades.project_id = :project_id
+             ORDER BY students.full_name, evaluable_items.name',
+        );
+        $statement->execute(['teacher_id' => $teacherId, 'project_id' => $projectId]);
+
+        return $statement->fetchAll();
+    }
+
+    /** Find one grade only when it belongs to the teacher making the request. */
+    public function findForTeacher(int $gradeId, int $teacherId): ?array
+    {
+        $statement = $this->connection->prepare(
+            'SELECT id, project_id, student_id, evaluable_item_id, teacher_id, grade_value
+             FROM grades
+             WHERE id = :id AND teacher_id = :teacher_id
+             LIMIT 1',
+        );
+        $statement->execute(['id' => $gradeId, 'teacher_id' => $teacherId]);
+        $grade = $statement->fetch();
+
+        return $grade === false ? null : $grade;
     }
 
     /** Return the total number of individual grades for the administrator dashboard. */
@@ -142,6 +177,21 @@ class GradeModel
             'item_id' => $itemId,
             'teacher_id' => $teacherId,
             'grade_value' => $gradeValue,
+        ]);
+    }
+
+    /** Update only the grade value; the teacher and all related IDs remain unchanged. */
+    public function updateOwnGrade(int $gradeId, int $teacherId, string $gradeValue): void
+    {
+        $statement = $this->connection->prepare(
+            'UPDATE grades
+             SET grade_value = :grade_value
+             WHERE id = :id AND teacher_id = :teacher_id',
+        );
+        $statement->execute([
+            'grade_value' => $gradeValue,
+            'id' => $gradeId,
+            'teacher_id' => $teacherId,
         ]);
     }
 }

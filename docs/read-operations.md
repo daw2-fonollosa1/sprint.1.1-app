@@ -27,20 +27,21 @@ The role dashboards now read their records from MariaDB through the existing PDO
 - `app/Views/pages/student/projects.php` — Displays only that student's assigned projects and items.
 - `app/Views/pages/student/project_details.php` — Displays information and grade details for one assigned project.
 - `app/Views/pages/student/grades.php` — Displays only the signed-in student's individual grades and averages.
-- `public/assets/js/admin-common.js`, `admin-items.js`, `admin-projects.js`, `teacher.js`, and `app/Models/DemoData.php` — Removed because they held unused or active hard-coded demonstration records that are replaced by PHP database reads. The shared navigation and form behavior continue to use the remaining JavaScript files.
-- `README.md`, `docs/administrator-interface.md`, `docs/administrator-user-management.md`, `docs/create-operations.md`, `docs/login-implementation.md`, `docs/teacher-interface.md`, `docs/student-interface.md`, and `docs/database-connection.md` — Updated so their descriptions match the database-backed reads and authentication limitation.
+- `public/assets/js/admin-common.js`, `admin-items.js`, `admin-projects.js`, `teacher.js`, and `app/Models/DemoData.php` — Removed because they held unused or active hard-coded demonstration records that are replaced by PHP database reads. `public/assets/js/app.js` was later removed with the role preview selector; navigation is based on the authenticated session.
+- `README.md` and the role/database guides — Updated so their descriptions match the database-backed reads and authenticated login.
 
 The existing `ProjectModel.php`, `EvaluableItemModel.php`, `app/Views/pages/admin/users.php`, and `app/Views/pages/admin/evaluable_items.php` already provided the reads needed by their screens, so they are reused without changes. Their existing controllers pass the database rows to the views.
 
 ## How a page gets its data
 
 1. `public/index.php` starts the PHP session and sends non-login page requests to `DashboardController`.
-2. The controller reads the account ID and role from `RoleAuthorization::currentUser()`. A `role` URL value only selects the navigation preview; it is not used as proof of identity.
-3. `UserModel::findByIdAndRole()` checks that the session account still exists in the `users` table with the same role.
-4. On a create-form page, `CreateOperationsController` handles a submitted form first. It returns feedback and submitted values, but it does not load the page lists.
-5. `ReadOperationsController` passes the existing PDO connection and authenticated account ID to the relevant model.
-6. The model runs SQL and returns rows as PHP arrays. Views loop through those arrays and render ordinary HTML.
-7. Views use `htmlspecialchars()` for database text. IDs used in links are converted to integers. Database exceptions go to the server log, while the page displays a general message in Catalan.
+2. `LoginController` checks the submitted username and password against MariaDB, then saves the verified account ID and database role in the session.
+3. The dashboard controller reads the account ID and role from `RoleAuthorization::currentUser()`. A `role` URL value is checked against that session and cannot grant a different identity.
+4. `UserModel::findByIdAndRole()` checks that the session account still exists in the `users` table with the same role.
+5. On a create-form page, `CreateOperationsController` handles a submitted form first. It returns feedback and submitted values, but it does not load the page lists.
+6. `ReadOperationsController` passes the existing PDO connection and authenticated account ID to the relevant model.
+7. The model runs SQL and returns rows as PHP arrays. Views loop through those arrays and render ordinary HTML.
+8. Views use `htmlspecialchars()` for database text. IDs used in links are converted to integers. Database exceptions go to the server log, while the page displays a general message in Catalan.
 
 The administrator summary counts projects, teachers, students, evaluable items, and individual grade rows. The administrator project table reads names from `teacher_projects`, `student_projects`, and `project_evaluable_items`.
 
@@ -61,11 +62,9 @@ Student Marc, PRJ-003, Proves: (8.0000 + 9.0000) / 2 = 8.5
 
 The requirements do not define a grade scale or a rounding rule. The application displays MariaDB's decimal average after removing trailing zeroes; PHP does not apply a new rounding rule.
 
-## Authentication limitation
+## Login and session checks
 
-The current demonstration login does not verify a password against MariaDB and does not create `$_SESSION['user']`. The read controller therefore shows a Catalan access message instead of loading any role's data. This is intentional: a URL role selector is not safe authorization.
-
-To use the database-backed pages, the application first needs a real login that verifies a password hash and stores the verified user ID and database role in the PHP session. Until that exists, the role-filtered reads are implemented but cannot be exercised through the current login screen. This prototype does not claim to provide real authentication, role security, or student-data privacy.
+The login verifies the password hash from the `users` row and stores the verified database ID and role in `$_SESSION['user']`. Each request checks that the ID and role still exist in MariaDB before loading role-specific data. A role changed in the URL cannot reveal another dashboard. The seed accounts use the local development password documented in `docs/login-implementation.md`.
 
 ## Checks and manual test plan
 
@@ -78,7 +77,7 @@ php tests/check_database_connection.php
 
 The first command should report no syntax errors. The second should print `Database connection successful.` when MariaDB, `pdo_mysql`, and local database settings are available.
 
-After configuring the database with `database/schema.sql` and `database/seed.sql`, and after a verified login is available, test these expected results:
+After configuring the database with `database/schema.sql` and `database/seed.sql`, sign in using the development accounts in `docs/login-implementation.md` and test these expected results:
 
 1. Administrator dashboard: 3 projects, 2 teachers, 2 students, 2 items, and 6 individual grades. The project page shows each assignment from the relationship tables.
 2. Either seeded teacher: only the three projects assigned to that teacher, with each project's associated students and items.

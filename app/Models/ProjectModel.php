@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-/** Reads and creates projects using the application's existing PDO connection. */
+/** Reads, creates, and updates projects using the application's PDO connection. */
 class ProjectModel
 {
     private PDO $connection;
@@ -39,12 +39,19 @@ class ProjectModel
     }
 
     /** Check the unique project code before inserting, for a friendly validation message. */
-    public function codeExists(string $code): bool
+    public function codeExists(string $code, ?int $exceptId = null): bool
     {
-        $statement = $this->connection->prepare(
-            'SELECT id FROM projects WHERE code = :code LIMIT 1',
-        );
-        $statement->execute(['code' => $code]);
+        if ($exceptId === null) {
+            $statement = $this->connection->prepare(
+                'SELECT id FROM projects WHERE code = :code LIMIT 1',
+            );
+            $statement->execute(['code' => $code]);
+        } else {
+            $statement = $this->connection->prepare(
+                'SELECT id FROM projects WHERE code = :code AND id <> :except_id LIMIT 1',
+            );
+            $statement->execute(['code' => $code, 'except_id' => $exceptId]);
+        }
 
         return $statement->fetchColumn() !== false;
     }
@@ -56,6 +63,20 @@ class ProjectModel
             'SELECT id FROM projects WHERE id = :id LIMIT 1',
         );
         $statement->execute(['id' => $projectId]);
+
+        return $statement->fetchColumn() !== false;
+    }
+
+    /** Check whether the teacher is linked to the selected project. */
+    public function isAssignedToTeacher(int $projectId, int $teacherId): bool
+    {
+        $statement = $this->connection->prepare(
+            'SELECT project_id
+             FROM teacher_projects
+             WHERE project_id = :project_id AND teacher_id = :teacher_id
+             LIMIT 1',
+        );
+        $statement->execute(['project_id' => $projectId, 'teacher_id' => $teacherId]);
 
         return $statement->fetchColumn() !== false;
     }
@@ -100,5 +121,21 @@ class ProjectModel
 
             throw $error;
         }
+    }
+
+    /** Update the editable project fields while keeping its ID and assignments unchanged. */
+    public function update(int $id, string $code, string $name, string $description): void
+    {
+        $statement = $this->connection->prepare(
+            'UPDATE projects
+             SET code = :code, name = :name, description = :description
+             WHERE id = :id',
+        );
+        $statement->execute([
+            'id' => $id,
+            'code' => $code,
+            'name' => $name,
+            'description' => $description,
+        ]);
     }
 }

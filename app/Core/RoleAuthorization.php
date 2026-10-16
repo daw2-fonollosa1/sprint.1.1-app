@@ -9,8 +9,8 @@ declare(strict_types=1);
 class RoleAuthorization
 {
     /**
-     * Return a valid session user, or null until a real login creates one.
-     * The future login controller must store ['id' => int, 'role' => string] in $_SESSION['user'].
+     * Return a valid session user, or null when no verified login is active.
+     * LoginController stores ['id' => int, 'role' => string] from the users table.
      */
     public static function currentUser(): ?array
     {

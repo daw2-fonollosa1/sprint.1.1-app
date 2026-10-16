@@ -21,7 +21,7 @@ This change adds PHP/PDO insert operations for users, projects, evaluable items,
 - `app/Views/pages/teacher/projects.php` contains the teacher project creation form and a list of projects assigned to the session teacher.
 - `app/Views/pages/teacher/grades.php` contains the project, student, item, and grade forms. It no longer stores grade changes in JavaScript.
 - `app/Views/layouts/main.php` stops loading the sample project/item JavaScript on the new PHP forms.
-- `README.md` describes the new handlers and the authentication blocker.
+- `README.md` describes the create handlers and authenticated role checks.
 - `docs/administrator-user-management.md` now reflects the server-side role check.
 - `docs/create-operations.md` explains these operations and their current limits.
 
@@ -61,9 +61,9 @@ The teacher form only offers projects assigned to the authenticated teacher, stu
 
 `grade_value` is `DECIMAL(10,4)`, so the server accepts up to six integer digits and four decimal digits. The requirements and decision log do not define the grading scale or rounding rule, so this code does not impose a range or calculate an average.
 
-## Authentication blocker
+## Authentication and permissions
 
-The current login accepts demo usernames and only changes the role preview in the URL. It does not verify a password, read a user row, or create a server-side identity. Every create form therefore receives HTTP 403 until a real login has verified the user and set a session such as:
+The login verifies a user's password hash from MariaDB and stores the ID and role returned by that row in the server-side session:
 
 ```php
 $_SESSION['user'] = [
@@ -72,15 +72,15 @@ $_SESSION['user'] = [
 ];
 ```
 
-The session role must come from the verified `users` row. Do not set it from `$_GET`, `$_POST`, JavaScript, or a hidden input. Creating authentication and access control is outside this Issue, so the handlers are implemented but cannot currently complete a write from the demo login.
+The session role comes from the verified `users` row. Do not set it from `$_GET`, `$_POST`, JavaScript, or a hidden input. Each create operation checks that session role before making database changes.
 
 ## Testing
 
 PHP syntax checks passed for all changed PHP controllers, models, and views. A database integration check could not run in this environment: PHP does not have the PDO class or `pdo_mysql` module, the `mariadb` client is unavailable, and Docker Compose reports that its configuration is empty. No database insert is claimed as tested here.
 
-I ran controller-level POST checks with an empty PHP session and client-supplied role values. Both a project create request and a user create request returned HTTP 403 before any write. I also rendered the changed forms with small sample fixtures and exercised the project required-field and grade precision validators with valid and invalid values; those checks passed without writing to a database. A browser submission with the demo login should show the same Catalan access message.
+Earlier controller checks confirmed that requests without a verified session were rejected before writing. The login now creates that session after checking MariaDB. Repeat the valid and invalid form checks below using an authenticated account; this environment has no PDO MySQL driver, so live database submissions cannot be run here.
 
-After MariaDB, `pdo_mysql`, and verified login sessions are available, use a disposable database for these checks:
+After MariaDB and `pdo_mysql` are available, import the seed and sign in with an account in `docs/login-implementation.md`. Use a development database for these checks:
 
 | Operation | Valid example | Invalid example and expected result |
 | --- | --- | --- |
@@ -92,8 +92,8 @@ After MariaDB, `pdo_mysql`, and verified login sessions are available, use a dis
 
 Check persistence by reloading the relevant page or querying the corresponding table. For assignments, query the matching junction table. For grades, query `grades` and verify that `teacher_id` identifies the author.
 
-There are no automated create-operation tests in the repository yet. Real valid and invalid database form submissions remain untested because this environment does not have PDO MySQL/MariaDB or an authenticated login.
+There are no automated create-operation tests in the repository yet. Real valid and invalid database form submissions require MariaDB and PHP's `pdo_mysql` extension. Use the test accounts described in `docs/login-implementation.md` after loading the seed data.
 
 ## Scope limits
 
-This Issue adds create operations and only the small database reads needed for form choices and visible lists. It does not add project/item/assignment/grade update or delete operations, does not connect the database-backed grade rows to the student grade view, and does not implement authentication, session login, or general access control. Existing administrator user edit/delete handlers remain from their earlier issue, but their POST requests are also blocked by the new server-side role check until authentication exists.
+This Issue adds create operations and only the small database reads needed for form choices and visible lists. It does not add project/item/assignment/grade update or delete operations or change the role permissions defined by the project requirements.

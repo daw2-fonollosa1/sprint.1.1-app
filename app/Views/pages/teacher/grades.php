@@ -4,6 +4,7 @@
 // to the teacher identity stored in the server-side session.
 $escapeGradeValue = static fn (string|int $value): string => htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8');
 $operationData = $createOperationsData;
+$updateData = $updateOperationsData;
 $selectedProjectId = $operationData['selectedProjectId'];
 $submitted = $operationData['submitted'];
 $requestedStudentId = $submitted['student_id'] ?? ($_GET['student_id'] ?? '');
@@ -52,6 +53,25 @@ foreach ($operationData['teacherProjects'] as $project) {
             <p class="mb-2">Revisa aquestes dades:</p>
             <ul class="mb-0">
                 <?php foreach ($operationData['validationErrors'] as $error): ?>
+                    <li><?= $escapeGradeValue($error) ?></li>
+                <?php endforeach; ?>
+            </ul>
+        </div>
+    <?php endif; ?>
+    <?php if ($updateData['feedback'] !== ''): ?>
+        <div class="alert alert-success" role="status"><?= $escapeGradeValue($updateData['feedback']) ?></div>
+    <?php endif; ?>
+    <?php if ($updateData['accessError'] !== ''): ?>
+        <div class="alert alert-warning" role="alert"><?= $escapeGradeValue($updateData['accessError']) ?></div>
+    <?php endif; ?>
+    <?php if ($updateData['databaseError'] !== ''): ?>
+        <div class="alert alert-danger" role="alert"><?= $escapeGradeValue($updateData['databaseError']) ?></div>
+    <?php endif; ?>
+    <?php if ($updateData['validationErrors'] !== []): ?>
+        <div class="alert alert-danger" role="alert">
+            <p class="mb-2">Revisa aquestes dades:</p>
+            <ul class="mb-0">
+                <?php foreach ($updateData['validationErrors'] as $error): ?>
                     <li><?= $escapeGradeValue($error) ?></li>
                 <?php endforeach; ?>
             </ul>
@@ -112,4 +132,57 @@ foreach ($operationData['teacherProjects'] as $project) {
     </form>
 
     <div class="alert alert-info mt-4 mb-0" role="status">Cada qualificació es guarda com una nota individual del docent seleccionat.</div>
+
+    <article class="card border-0 shadow-sm mt-4">
+        <div class="card-body">
+            <h2 class="h4">Les meves qualificacions desades</h2>
+            <p class="text-secondary">Només es poden editar les qualificacions que has introduït amb aquest compte.</p>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th scope="col">Alumne/a</th>
+                            <th scope="col">Ítem avaluable</th>
+                            <th scope="col">Nota</th>
+                            <th scope="col">Accions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($operationData['teacherGrades'] as $grade): ?>
+                            <?php
+                            $gradeId = (int) $grade['id'];
+                            $isEditingGrade = $updateData['editType'] === 'grade'
+                                && $updateData['editId'] === (string) $gradeId;
+                            $gradeFormValue = $isEditingGrade
+                                ? $updateData['submitted']['grade_value']
+                                : $grade['grade_value'];
+                            ?>
+                            <tr>
+                                <td><?= $escapeGradeValue($grade['student_name']) ?></td>
+                                <td><?= $escapeGradeValue($grade['item_code'] . ' · ' . $grade['item_name']) ?></td>
+                                <td><?= $escapeGradeValue($grade['grade_value']) ?></td>
+                                <td>
+                                    <!-- The form submits only a new value and the row ID; PHP checks its teacher owner. -->
+                                    <details<?= $isEditingGrade ? ' open' : '' ?>>
+                                        <summary class="btn btn-sm btn-outline-secondary">Edita</summary>
+                                        <form class="mt-3" method="post" action="/?page=grades&amp;role=teacher">
+                                            <input type="hidden" name="action" value="update_grade">
+                                            <input type="hidden" name="id" value="<?= $gradeId ?>">
+                                            <input type="hidden" name="project_id" value="<?= (int) $grade['project_id'] ?>">
+                                            <label class="form-label" for="grade-value-edit-<?= $gradeId ?>">Nova nota</label>
+                                            <input class="form-control mb-2" id="grade-value-edit-<?= $gradeId ?>" name="grade_value" type="number" step="any" inputmode="decimal" required value="<?= $escapeGradeValue($gradeFormValue) ?>">
+                                            <button class="btn btn-primary btn-sm" type="submit">Desa la nota</button>
+                                        </form>
+                                    </details>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                        <?php if ($operationData['teacherGrades'] === []): ?>
+                            <tr><td colspan="4" class="text-center text-secondary py-4">Encara no has desat cap qualificació per a aquest projecte.</td></tr>
+                        <?php endif; ?>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </article>
 </section>

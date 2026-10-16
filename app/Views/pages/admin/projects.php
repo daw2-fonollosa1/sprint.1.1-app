@@ -4,6 +4,7 @@
 // No JavaScript array is used to create projects or assignments.
 $escapeProjectValue = static fn (string|int $value): string => htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8');
 $operationData = $createOperationsData;
+$updateData = $updateOperationsData;
 $submittedProject = $operationData['submitted'];
 $formUrl = '/?page=projects&amp;role=admin';
 $renderNames = static function (array $names) use ($escapeProjectValue): string {
@@ -35,6 +36,25 @@ $renderNames = static function (array $names) use ($escapeProjectValue): string 
             <p class="mb-2">Revisa aquestes dades:</p>
             <ul class="mb-0">
                 <?php foreach ($operationData['validationErrors'] as $error): ?>
+                    <li><?= $escapeProjectValue($error) ?></li>
+                <?php endforeach; ?>
+            </ul>
+        </div>
+    <?php endif; ?>
+    <?php if ($updateData['feedback'] !== ''): ?>
+        <div class="alert alert-success" role="status"><?= $escapeProjectValue($updateData['feedback']) ?></div>
+    <?php endif; ?>
+    <?php if ($updateData['accessError'] !== ''): ?>
+        <div class="alert alert-warning" role="alert"><?= $escapeProjectValue($updateData['accessError']) ?></div>
+    <?php endif; ?>
+    <?php if ($updateData['databaseError'] !== ''): ?>
+        <div class="alert alert-danger" role="alert"><?= $escapeProjectValue($updateData['databaseError']) ?></div>
+    <?php endif; ?>
+    <?php if ($updateData['validationErrors'] !== []): ?>
+        <div class="alert alert-danger" role="alert">
+            <p class="mb-2">Revisa aquestes dades:</p>
+            <ul class="mb-0">
+                <?php foreach ($updateData['validationErrors'] as $error): ?>
                     <li><?= $escapeProjectValue($error) ?></li>
                 <?php endforeach; ?>
             </ul>
@@ -72,10 +92,19 @@ $renderNames = static function (array $names) use ($escapeProjectValue): string 
             <p class="text-secondary">Projectes i assignacions actuals llegits de MariaDB.</p>
             <div class="table-responsive">
                 <table class="table table-hover align-middle mb-0">
-                    <thead class="table-light"><tr><th scope="col">Codi</th><th scope="col">Nom</th><th scope="col">Descripció</th><th scope="col">Professorat</th><th scope="col">Alumnat</th><th scope="col">Ítems</th></tr></thead>
+                    <thead class="table-light"><tr><th scope="col">Codi</th><th scope="col">Nom</th><th scope="col">Descripció</th><th scope="col">Professorat</th><th scope="col">Alumnat</th><th scope="col">Ítems</th><th scope="col">Accions</th></tr></thead>
                     <tbody>
                         <?php foreach ($operationData['projects'] as $project): ?>
                             <?php
+                            $projectId = (int) $project['id'];
+                            $isEditingProject = $updateData['editType'] === 'project'
+                                && $updateData['editId'] === (string) $projectId;
+                            $projectFormValues = $isEditingProject ? $updateData['submitted'] : $project;
+                            $isEditingAssignments = $updateData['editType'] === 'assignments'
+                                && $updateData['editId'] === (string) $projectId;
+                            $submittedAssignmentIds = $isEditingAssignments
+                                ? ($updateData['submitted']['assignments'] ?? [])
+                                : [];
                             $projectAssignments = $operationData['projectAssignments'][(int) $project['id']] ?? [
                                 'teachers' => [],
                                 'students' => [],
@@ -89,10 +118,66 @@ $renderNames = static function (array $names) use ($escapeProjectValue): string 
                                 <td><?= $renderNames($projectAssignments['teachers']) ?></td>
                                 <td><?= $renderNames($projectAssignments['students']) ?></td>
                                 <td><?= $renderNames($projectAssignments['items']) ?></td>
+                                <td class="d-flex flex-column align-items-start gap-2">
+                                    <!-- Project fields come from the database and are changed only by this POST form. -->
+                                    <details<?= $isEditingProject ? ' open' : '' ?>>
+                                        <summary class="btn btn-sm btn-outline-secondary">Edita el projecte</summary>
+                                        <form class="mt-3" method="post" action="<?= $formUrl ?>">
+                                            <input type="hidden" name="action" value="update_project">
+                                            <input type="hidden" name="id" value="<?= $projectId ?>">
+                                            <label class="form-label" for="project-code-edit-<?= $projectId ?>">Codi</label>
+                                            <input class="form-control mb-2" id="project-code-edit-<?= $projectId ?>" name="code" maxlength="50" required value="<?= $escapeProjectValue($projectFormValues['code']) ?>">
+                                            <label class="form-label" for="project-name-edit-<?= $projectId ?>">Nom</label>
+                                            <input class="form-control mb-2" id="project-name-edit-<?= $projectId ?>" name="name" maxlength="150" required value="<?= $escapeProjectValue($projectFormValues['name']) ?>">
+                                            <label class="form-label" for="project-description-edit-<?= $projectId ?>">Descripció</label>
+                                            <textarea class="form-control mb-2" id="project-description-edit-<?= $projectId ?>" name="description" rows="3" required><?= $escapeProjectValue($projectFormValues['description']) ?></textarea>
+                                            <button class="btn btn-primary btn-sm" type="submit">Desa els canvis</button>
+                                        </form>
+                                    </details>
+
+                                    <!-- The assignment form shows the saved links checked before editing. -->
+                                    <details<?= $isEditingAssignments ? ' open' : '' ?>>
+                                        <summary class="btn btn-sm btn-outline-primary">Edita assignacions</summary>
+                                        <form class="mt-3" method="post" action="<?= $formUrl ?>">
+                                            <input type="hidden" name="action" value="update_assignments">
+                                            <input type="hidden" name="project_id" value="<?= $projectId ?>">
+                                            <?php
+                                            $assignmentEditGroups = [
+                                                ['key' => 'teachers', 'field' => 'teacher_ids[]', 'title' => 'Professorat', 'records' => $operationData['teachers'], 'label' => static fn (array $record): string => $record['full_name'] . ' (@' . $record['username'] . ')'],
+                                                ['key' => 'students', 'field' => 'student_ids[]', 'title' => 'Alumnat', 'records' => $operationData['students'], 'label' => static fn (array $record): string => $record['full_name'] . ' (@' . $record['username'] . ')'],
+                                                ['key' => 'items', 'field' => 'item_ids[]', 'title' => 'Ítems avaluables', 'records' => $operationData['items'], 'label' => static fn (array $record): string => $record['code'] . ' · ' . $record['name']],
+                                            ];
+                                            ?>
+                                            <p class="small text-secondary">Marca totes les relacions que vols conservar en aquest projecte.</p>
+                                            <?php foreach ($assignmentEditGroups as $group): ?>
+                                                <?php
+                                                $currentIds = $operationData['projectAssignmentIds'][$projectId][$group['key']] ?? [];
+                                                $selectedIds = $isEditingAssignments
+                                                    ? ($submittedAssignmentIds[$group['key']] ?? [])
+                                                    : $currentIds;
+                                                ?>
+                                                <fieldset class="mb-3">
+                                                    <legend class="form-label fs-6"><?= $escapeProjectValue($group['title']) ?></legend>
+                                                    <?php foreach ($group['records'] as $record): ?>
+                                                        <?php $recordId = (int) $record['id']; ?>
+                                                        <div class="form-check">
+                                                            <input class="form-check-input" id="edit-<?= $group['key'] ?>-<?= $projectId ?>-<?= $recordId ?>" type="checkbox" name="<?= $escapeProjectValue($group['field']) ?>" value="<?= $recordId ?>"<?= in_array($recordId, $selectedIds, true) ? ' checked' : '' ?>>
+                                                            <label class="form-check-label" for="edit-<?= $group['key'] ?>-<?= $projectId ?>-<?= $recordId ?>"><?= $escapeProjectValue($group['label']($record)) ?></label>
+                                                        </div>
+                                                    <?php endforeach; ?>
+                                                    <?php if ($group['records'] === []): ?>
+                                                        <p class="small text-secondary mb-0">No hi ha elements disponibles.</p>
+                                                    <?php endif; ?>
+                                                </fieldset>
+                                            <?php endforeach; ?>
+                                            <button class="btn btn-primary btn-sm" type="submit">Desa les assignacions</button>
+                                        </form>
+                                    </details>
+                                </td>
                             </tr>
                         <?php endforeach; ?>
                         <?php if ($operationData['projects'] === []): ?>
-                            <tr><td colspan="6" class="text-center text-secondary py-4">Encara no hi ha projectes.</td></tr>
+                            <tr><td colspan="7" class="text-center text-secondary py-4">Encara no hi ha projectes.</td></tr>
                         <?php endif; ?>
                     </tbody>
                 </table>

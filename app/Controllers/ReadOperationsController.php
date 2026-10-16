@@ -84,6 +84,8 @@ class ReadOperationsController
             $data['formData']['items'] = (new EvaluableItemModel($connection))->getAll();
             $data['formData']['projectAssignments'] = (new ProjectAssignmentModel($connection))
                 ->getAllForAdministrator();
+            $data['formData']['projectAssignmentIds'] = (new ProjectAssignmentModel($connection))
+                ->getIdsForAllProjects();
         }
 
         if ($pageKey === 'evaluable-items') {
@@ -125,6 +127,7 @@ class ReadOperationsController
         $projectId = (int) $data['formData']['selectedProjectId'];
         $data['formData']['gradeStudents'] = $gradeModel->getProjectStudents($projectId);
         $data['formData']['gradeItems'] = $gradeModel->getProjectItems($projectId);
+        $data['formData']['teacherGrades'] = $gradeModel->getGradesForTeacherProject($teacherId, $projectId);
     }
 
     /** Keep a teacher's requested project only if it belongs to their assigned project list. */
@@ -157,12 +160,14 @@ class ReadOperationsController
         return [
             'projects' => [],
             'projectAssignments' => [],
+            'projectAssignmentIds' => [],
             'items' => [],
             'teachers' => [],
             'students' => [],
             'teacherProjects' => [],
             'gradeStudents' => [],
             'gradeItems' => [],
+            'teacherGrades' => [],
             'selectedProjectId' => '',
         ];
     }

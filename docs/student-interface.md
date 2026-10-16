@@ -20,7 +20,7 @@ The student dashboard, project list, project details, and grade list read from M
 
 The controller gets the user ID from `RoleAuthorization::currentUser()` and confirms that the same ID has the `student` role in MariaDB. `StudentDashboardData` starts its project query from `student_projects` and uses a prepared `student_id` value. Its grade queries also filter by that same ID.
 
-The project filter only accepts a project already in the student's assigned project list. The model does not read a student ID from `$_GET`, `$_POST`, or JavaScript. This server-side filtering is only as trustworthy as the session creation process; the current demonstration login does not create a verified session.
+The project filter only accepts a project already in the student's assigned project list. The model does not read a student ID from `$_GET`, `$_POST`, or JavaScript. The login verifies the account in MariaDB and creates the server-side session from the returned database ID and role.
 
 ## How averages are calculated
 
@@ -39,7 +39,7 @@ The requirements do not set a grading scale or a rounding rule. The view trims t
 
 ## Manual test checklist
 
-There are no automated read-operation tests in the repository. The seed data can be used for these checks after MariaDB, `pdo_mysql`, and a verified session login are available:
+There are no automated read-operation tests in the repository. The seed data can be used for these checks after MariaDB and `pdo_mysql` are available. Sign in as `student-marc` or `student-laura` with the development password `12345`:
 
 1. Sign in as administrator and open `/?page=dashboard&role=admin`. Check that the user, project, item, and grade totals match the database.
 2. Sign in as `teacher-marta` or `teacher-joan`. Confirm the dashboard and project pages show only the three projects assigned to that account, with their associated students and items.
@@ -49,6 +49,4 @@ There are no automated read-operation tests in the repository. The seed data can
 6. While signed in as Marc, request `/?page=grades&role=student&project_id=2` or add `student_id=5` to the URL. The first request should show an invalid-project filter message; the student ID parameter must not change the selected account or reveal Laura's grade.
 7. Remove or change the PHP session role and confirm the controller shows an access message without rendering another role's records.
 
-## Authentication dependency
-
-The sample login accepts a role preview but does not verify a database password or create `$_SESSION['user']`. Therefore the screens intentionally do not show student records when using that demonstration login. A real login must verify the account and create the session before the role-filtered read pages can be used. No claim of real authentication or privacy is made until that work is complete.
+Student filtering uses the ID and role in the authenticated PHP session. The user ID submitted in a URL or form cannot select another student's records. Production deployment still needs HTTPS and the usual operational security measures; the seeded development accounts must not be used in production.

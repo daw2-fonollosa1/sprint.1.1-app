@@ -1,6 +1,6 @@
 # Administrator User Management
 
-The administrator page reads teacher and student accounts from MariaDB and contains create, edit, and delete forms. Every POST change now checks a server-side session role. The current demo login does not create an authenticated session, so the page is read-only until real authentication is implemented.
+The administrator page reads teacher and student accounts from MariaDB and contains create, edit, and delete forms. Every POST change checks the authenticated server-side session role. Sign in as `admin-demo` with the local development password `12345` after importing the seed data.
 
 ## Files
 
@@ -20,16 +20,16 @@ The schema provides `username`, `full_name`, `password_hash`, and `role`. The pa
 
 The controller checks required values, database length limits, allowed roles, duplicate usernames, and role changes for users with project assignments. The database's unique username key is also checked by MariaDB.
 
-## Current authentication blocker
+## Login and role check
 
-The demonstration login accepts sample names and does not read the `users` table or create a server-side identity. Therefore, the create, edit, and delete POST forms receive HTTP 403, and the shared layout shows an access message instead of the administrator data page. A future login must verify a password hash and set a session identity such as `$_SESSION['user'] = ['id' => 1, 'role' => 'administrator']`; the role must come from the verified database row.
+`LoginController` verifies the submitted password with the hash returned by `UserModel::findByUsername()`. After a successful check, PHP stores the database user ID and role in `$_SESSION['user']`. `DashboardController` and the user-management controller check that session role before they display or change administrator data. Changing `role=admin` in the address bar does not grant administrator access.
 
 ## Manual check
 
 1. Configure `.env`, create the schema and seed data, and run `php tests/check_database_connection.php`.
 2. Start PHP with `php -S 127.0.0.1:8000 -t public` and open `http://127.0.0.1:8000/?page=users&role=admin`.
 3. Confirm the teacher/student rows are displayed when PDO can connect.
-4. Try a create, edit, or delete POST using the demo login. PHP must reject the request with HTTP 403 and a Catalan access message.
-5. After real login/session support is added, test valid and invalid creation, edit, and delete operations using a disposable database. Confirm saved rows remain after reload.
+4. Create, edit, and delete a test teacher or student. Confirm each change remains after reloading the page.
+5. Sign out and sign in as a teacher or student. Opening the administrator user-management page must show the role access message, and POST changes must be rejected.
 
 Use a disposable development database. Deleting a user also removes linked assignments and grades because the schema uses cascading foreign keys.

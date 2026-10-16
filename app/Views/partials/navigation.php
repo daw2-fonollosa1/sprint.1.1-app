@@ -20,7 +20,7 @@
             </button>
 
             <div class="collapse navbar-collapse" id="main-navigation">
-                <!-- The controller supplies only the section links configured for this preview role. -->
+                <!-- The controller supplies links for the role verified in the PHP session. -->
                 <!-- The loop creates one link per section; the current section is marked as active. -->
                 <ul class="navbar-nav me-lg-auto my-3 my-lg-0">
                     <?php foreach ($navigationItems as $item): ?>
@@ -43,19 +43,14 @@
                     <?php endforeach; ?>
                 </ul>
 
-                <!-- This GET form asks PHP to render the dashboard preview for another role. -->
-                <!-- The selector demonstrates different menus; it does not enforce permissions. -->
-                <form class="role-preview d-flex align-items-center gap-2" method="get" action="/">
-                    <input type="hidden" name="page" value="dashboard">
-                    <label class="form-label mb-0" for="role-preview">Previsualitza el rol</label>
-                    <select class="form-select form-select-sm" id="role-preview" name="role" data-role-preview>
-                        <?php foreach ($roleOptions as $roleKey => $roleLabel): ?>
-                            <option value="<?= htmlspecialchars($roleKey, ENT_QUOTES, 'UTF-8') ?>"<?= $roleKey === $currentRoleKey ? ' selected' : '' ?>>
-                                <?= htmlspecialchars($roleLabel, ENT_QUOTES, 'UTF-8') ?>
-                            </option>
-                        <?php endforeach; ?>
-                    </select>
-                    <button class="btn btn-sm btn-outline-light" type="submit">Aplica</button>
+                <!-- Sign-out is a POST form and includes the session token checked by PHP. -->
+                <form class="d-flex align-items-center" method="post" action="/?page=logout">
+                    <input
+                        type="hidden"
+                        name="csrf_token"
+                        value="<?= htmlspecialchars((string) ($_SESSION['csrf_token'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"
+                    >
+                    <button class="btn btn-sm btn-outline-light" type="submit">Tanca la sessió</button>
                 </form>
             </div>
         </div>

@@ -22,6 +22,22 @@ class UserModel
         $this->connection = $connection;
     }
 
+    /** Find one account by its username for the login form. */
+    public function findByUsername(string $username): ?array
+    {
+        // Return the hash only to the login controller; views never receive it.
+        $statement = $this->connection->prepare(
+            'SELECT id, username, full_name, password_hash, role
+             FROM users
+             WHERE username = :username
+             LIMIT 1',
+        );
+        $statement->execute(['username' => $username]);
+        $user = $statement->fetch();
+
+        return $user === false ? null : $user;
+    }
+
     /**
      * Return the accounts shown in the administrator's table.
      * The password hash is deliberately omitted because the page never needs to display it.

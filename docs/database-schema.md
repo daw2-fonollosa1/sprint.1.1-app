@@ -1,19 +1,19 @@
 # Database Schema
 
-This document explains the MariaDB schema used by the PHP application. The SQL files create the tables and add small development examples. Create handlers use the tables through the existing PDO connection; see `docs/create-operations.md` for details and the current login blocker.
+This document explains the MariaDB schema used by the PHP application. The SQL files create the tables and add small development examples. Login, read handlers, and create handlers use the tables through the existing PDO connection; see `docs/login-implementation.md` for sign-in details.
 
 ## Files
 
 - `database/schema.sql` creates the database and its tables.
 - `database/seed.sql` inserts sample accounts, projects, evaluable items, assignments, and grades.
 
-The seed data is for development only. Its password hashes are random placeholders and are not usable login credentials. The SQL file contains no plaintext passwords.
+The seed data is for development only. All five sample accounts use the test password `12345`; the SQL stores only its password hash, never the plain password. Re-importing the seed updates only the hashes for these known sample usernames.
 
 ## Tables
 
 ### `users`
 
-Stores application accounts. `role` can be `administrator`, `teacher`, or `student`. `username` is unique so two accounts cannot use the same login name. `password_hash` is where a future authentication system would store a password hash.
+Stores application accounts. `role` can be `administrator`, `teacher`, or `student`. `username` is unique so two accounts cannot use the same login name. `password_hash` stores the one-way hash that the login checks with PHP's `password_verify()`.
 
 The seed has one administrator, two teachers, and two students. The requirement says there must be one administrator. This simple schema stores the role, but the application must enforce the one-administrator rule and must check that teacher and student assignments use users with the matching role.
 
@@ -73,7 +73,7 @@ mariadb -u root -p < database/schema.sql
 mariadb -u root -p daw2_project_manager < database/seed.sql
 ```
 
-The seed is intended for a newly created, empty schema. To inspect the tables and sample records:
+The seed can be imported more than once. It updates only the password hashes for the five known sample usernames, and `INSERT IGNORE` skips duplicate account, project, item, assignment, and grade rows instead of overwriting them. To inspect the tables and sample records:
 
 ```bash
 mariadb -u root -p daw2_project_manager -e "SHOW TABLES; SELECT role, COUNT(*) AS account_count FROM users GROUP BY role; SELECT project_id, student_id, evaluable_item_id, COUNT(*) AS teacher_count FROM grades GROUP BY project_id, student_id, evaluable_item_id;"
@@ -81,4 +81,4 @@ mariadb -u root -p daw2_project_manager -e "SHOW TABLES; SELECT role, COUNT(*) A
 
 For project 1, student 4, and item 1, the final query should show two grade rows because two teachers graded that combination. A second grade by the same teacher for that exact combination should be rejected by the unique constraint.
 
-The schema is connected to create handlers through PDO. The handlers use the existing schema without adding fields. Real authentication and successful application writes still require a future login/session implementation.
+The schema is connected to the login, read pages, and create handlers through PDO. The application checks account roles from the database and keeps the verified account ID and role in a PHP session.

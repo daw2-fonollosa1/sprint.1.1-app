@@ -5,6 +5,7 @@
 $escapeProjectValue = static fn (string|int $value): string => htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8');
 $operationData = $createOperationsData;
 $updateData = $updateOperationsData;
+$deleteData = $deleteOperationsData;
 $submittedProject = $operationData['submitted'];
 $formUrl = '/?page=projects&amp;role=admin';
 $renderNames = static function (array $names) use ($escapeProjectValue): string {
@@ -55,6 +56,25 @@ $renderNames = static function (array $names) use ($escapeProjectValue): string 
             <p class="mb-2">Revisa aquestes dades:</p>
             <ul class="mb-0">
                 <?php foreach ($updateData['validationErrors'] as $error): ?>
+                    <li><?= $escapeProjectValue($error) ?></li>
+                <?php endforeach; ?>
+            </ul>
+        </div>
+    <?php endif; ?>
+    <?php if ($deleteData['feedback'] !== ''): ?>
+        <div class="alert alert-success" role="status"><?= $escapeProjectValue($deleteData['feedback']) ?></div>
+    <?php endif; ?>
+    <?php if ($deleteData['accessError'] !== ''): ?>
+        <div class="alert alert-warning" role="alert"><?= $escapeProjectValue($deleteData['accessError']) ?></div>
+    <?php endif; ?>
+    <?php if ($deleteData['databaseError'] !== ''): ?>
+        <div class="alert alert-danger" role="alert"><?= $escapeProjectValue($deleteData['databaseError']) ?></div>
+    <?php endif; ?>
+    <?php if ($deleteData['validationErrors'] !== []): ?>
+        <div class="alert alert-danger" role="alert">
+            <p class="mb-2">No s’ha pogut completar l’eliminació:</p>
+            <ul class="mb-0">
+                <?php foreach ($deleteData['validationErrors'] as $error): ?>
                     <li><?= $escapeProjectValue($error) ?></li>
                 <?php endforeach; ?>
             </ul>
@@ -173,6 +193,47 @@ $renderNames = static function (array $names) use ($escapeProjectValue): string 
                                             <button class="btn btn-primary btn-sm" type="submit">Desa les assignacions</button>
                                         </form>
                                     </details>
+
+                                    <!-- Separate POST forms remove one assignment at a time. -->
+                                    <details>
+                                        <summary class="btn btn-sm btn-outline-danger">Elimina assignacions</summary>
+                                        <div class="mt-3">
+                                            <?php
+                                            $assignmentDeleteGroups = [
+                                                ['key' => 'teachers', 'title' => 'Professorat', 'records' => $operationData['teachers'], 'label' => static fn (array $record): string => $record['full_name'] . ' (@' . $record['username'] . ')'],
+                                                ['key' => 'students', 'title' => 'Alumnat', 'records' => $operationData['students'], 'label' => static fn (array $record): string => $record['full_name'] . ' (@' . $record['username'] . ')'],
+                                                ['key' => 'items', 'title' => 'Ítems avaluables', 'records' => $operationData['items'], 'label' => static fn (array $record): string => $record['code'] . ' · ' . $record['name']],
+                                            ];
+                                            ?>
+                                            <p class="small text-secondary">Les assignacions amb qualificacions no es poden eliminar.</p>
+                                            <?php foreach ($assignmentDeleteGroups as $group): ?>
+                                                <?php $assignedIds = $operationData['projectAssignmentIds'][$projectId][$group['key']] ?? []; ?>
+                                                <h3 class="h6 mt-3"><?= $escapeProjectValue($group['title']) ?></h3>
+                                                <?php foreach ($assignedIds as $assignedId): ?>
+                                                    <?php foreach ($group['records'] as $record): ?>
+                                                        <?php if ((int) $record['id'] !== (int) $assignedId) { continue; } ?>
+                                                        <form class="d-flex flex-wrap align-items-center justify-content-between gap-2 border-top py-2" method="post" action="<?= $formUrl ?>" onsubmit="return confirm('Vols eliminar aquesta assignació? Si té qualificacions vinculades, l’operació serà rebutjada.')">
+                                                            <input type="hidden" name="action" value="delete_assignment">
+                                                            <input type="hidden" name="project_id" value="<?= $projectId ?>">
+                                                            <input type="hidden" name="assignment_type" value="<?= $escapeProjectValue($group['key']) ?>">
+                                                            <input type="hidden" name="record_id" value="<?= (int) $assignedId ?>">
+                                                            <span class="small"><?= $escapeProjectValue($group['label']($record)) ?></span>
+                                                            <button class="btn btn-sm btn-outline-danger" type="submit">Elimina</button>
+                                                        </form>
+                                                    <?php endforeach; ?>
+                                                <?php endforeach; ?>
+                                                <?php if ($assignedIds === []): ?>
+                                                    <p class="small text-secondary">No hi ha assignacions.</p>
+                                                <?php endif; ?>
+                                            <?php endforeach; ?>
+                                        </div>
+                                    </details>
+
+                                    <form method="post" action="<?= $formUrl ?>" onsubmit="return confirm('Vols eliminar aquest projecte? PHP només el podrà eliminar si no té assignacions ni qualificacions.')">
+                                        <input type="hidden" name="action" value="delete_project">
+                                        <input type="hidden" name="id" value="<?= $projectId ?>">
+                                        <button class="btn btn-sm btn-outline-danger" type="submit">Elimina el projecte</button>
+                                    </form>
                                 </td>
                             </tr>
                         <?php endforeach; ?>

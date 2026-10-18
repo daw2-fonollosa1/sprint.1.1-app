@@ -73,12 +73,12 @@
         bootstrap.Modal.getOrCreateInstance(modalElement).show();
     });
 
-    // Ask before submitting a delete form. If confirmed, the browser sends a regular POST
-    // and MariaDB removes linked assignments and grades through the schema's cascade rules.
+    // Ask before submitting a delete form. PHP will block the delete if the account
+    // still has project assignments, so related grades are never removed by a cascade.
     document.querySelectorAll('[data-delete-user-form]').forEach((deleteForm) => {
         deleteForm.addEventListener('submit', (event) => {
             const userName = deleteForm.dataset.userName;
-            const message = `Vols eliminar el compte de ${userName}? També s’eliminaran les assignacions i qualificacions vinculades.`;
+            const message = `Vols eliminar el compte de ${userName}? Si té projectes assignats, PHP bloquejarà l’eliminació.`;
 
             if (!window.confirm(message)) event.preventDefault();
         });

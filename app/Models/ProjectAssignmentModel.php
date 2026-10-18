@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-/** Reads, creates, and updates teacher, student, and item links for a project. */
+/** Reads, creates, updates, and safely deletes project assignment links. */
 class ProjectAssignmentModel
 {
     private PDO $connection;
@@ -166,6 +166,58 @@ class ProjectAssignmentModel
             $this->connection->commit();
 
             return null;
+        } catch (Throwable $error) {
+            if ($this->connection->inTransaction()) {
+                $this->connection->rollBack();
+            }
+
+            throw $error;
+        }
+    }
+
+    /** Delete one teacher, student, or item link if no grade uses that relationship. */
+    public function deleteOne(string $type, int $projectId, int $recordId): string
+    {
+        $settingsByType = $this->assignmentTypes();
+
+        if (!isset($settingsByType[$type])) {
+            return 'invalid_type';
+        }
+
+        $settings = $settingsByType[$type];
+        $this->connection->beginTransaction();
+
+        try {
+            // Table and column names come only from the fixed map above, never from the form.
+            $link = $this->connection->prepare(
+                'SELECT ' . $settings['recordColumn'] . ' FROM ' . $settings['table']
+                . ' WHERE project_id = :project_id AND ' . $settings['recordColumn'] . ' = :record_id'
+                . ' FOR UPDATE',
+            );
+            $link->execute(['project_id' => $projectId, 'record_id' => $recordId]);
+
+            if ($link->fetchColumn() === false) {
+                $this->connection->rollBack();
+                return 'missing';
+            }
+
+            $grade = $this->connection->prepare(
+                'SELECT id FROM grades
+                 WHERE project_id = :project_id AND ' . $settings['gradeColumn'] . ' = :record_id
+                 LIMIT 1',
+            );
+            $grade->execute(['project_id' => $projectId, 'record_id' => $recordId]);
+
+            if ($grade->fetchColumn() !== false) {
+                $this->connection->rollBack();
+                return 'has_grades';
+            }
+
+            $delete = $this->connection->prepare($settings['deleteSql']);
+            $delete->execute(['project_id' => $projectId, 'record_id' => $recordId]);
+            $this->connection->commit();
+
+            return $delete->rowCount() > 0 ? 'deleted' : 'missing';
         } catch (Throwable $error) {
             if ($this->connection->inTransaction()) {
                 $this->connection->rollBack();

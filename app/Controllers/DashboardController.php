@@ -70,6 +70,7 @@ class DashboardController
         $adminUserPageData = null;
         $createOperationsData = null;
         $updateOperationsData = null;
+        $deleteOperationsData = null;
         $teacherData = [
             'projects' => [],
             'students' => [],
@@ -106,11 +107,12 @@ class DashboardController
                     http_response_code(403);
                     $readAccessError = 'No s’ha pogut verificar el compte autenticat a la base de dades.';
                 } else {
-                    // Keep create and update requests in their own controllers. An update POST
-                    // must not be mistaken for an unknown create action on the same page.
+                    // Keep create, update, and delete requests in their own controllers.
+                    // A delete POST must not be mistaken for an unknown create action.
                     $createState = null;
                     $isUpdatePost = $this->isUpdatePost();
-                    if ($this->isCreateFormPage($currentRoleKey, $pageKey) && !$isUpdatePost) {
+                    $isDeletePost = $this->isDeletePost();
+                    if ($this->isCreateFormPage($currentRoleKey, $pageKey) && !$isUpdatePost && !$isDeletePost) {
                         require_once __DIR__ . '/CreateOperationsController.php';
                         $createState = (new CreateOperationsController())->handle($pageKey, $currentRoleKey);
                     }
@@ -119,6 +121,16 @@ class DashboardController
                     if ($this->isUpdateFormPage($currentRoleKey, $pageKey)) {
                         require_once __DIR__ . '/UpdateOperationsController.php';
                         $updateState = (new UpdateOperationsController())->handle($pageKey, $currentRoleKey);
+                    }
+
+                    $deleteState = null;
+                    if ($this->isDeleteFormPage($currentRoleKey, $pageKey)) {
+                        require_once __DIR__ . '/DeleteOperationsController.php';
+                        $deleteState = (new DeleteOperationsController())->handle(
+                            $pageKey,
+                            $currentRoleKey,
+                            $sessionUser['id'],
+                        );
                     }
 
                     // One controller prepares the records displayed by the current page.
@@ -146,6 +158,11 @@ class DashboardController
                     if ($updateState !== null) {
                         // Update forms receive the same database choices plus their own messages.
                         $updateOperationsData = array_merge($readData['formData'], $updateState);
+                    }
+
+                    if ($deleteState !== null) {
+                        // Delete forms use the same database lists and display their own result.
+                        $deleteOperationsData = array_merge($readData['formData'], $deleteState);
                     }
 
                     if ($currentRoleKey === 'admin' && $pageKey === 'users') {
@@ -198,6 +215,13 @@ class DashboardController
             || ($roleKey === 'teacher' && in_array($pageKey, ['projects', 'grades'], true));
     }
 
+    /** Identify pages that already display records with delete controls. */
+    private function isDeleteFormPage(string $roleKey, string $pageKey): bool
+    {
+        return ($roleKey === 'admin' && in_array($pageKey, ['projects', 'evaluable-items', 'grades'], true))
+            || ($roleKey === 'teacher' && $pageKey === 'grades');
+    }
+
     /** Distinguish an update POST from the create forms that share the same pages. */
     private function isUpdatePost(): bool
     {
@@ -208,6 +232,18 @@ class DashboardController
         $action = $_POST['action'] ?? '';
 
         return is_string($action) && str_starts_with($action, 'update_');
+    }
+
+    /** Keep delete POST requests out of the existing create and update handlers. */
+    private function isDeletePost(): bool
+    {
+        if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') {
+            return false;
+        }
+
+        $action = $_POST['action'] ?? '';
+
+        return is_string($action) && str_starts_with($action, 'delete_');
     }
 
     /** Provide empty create values when this response came from an update form. */
@@ -274,6 +310,7 @@ class DashboardController
                 'projects' => '/pages/admin/projects.php',
                 'users' => '/pages/admin/users.php',
                 'evaluable-items' => '/pages/admin/evaluable_items.php',
+                'grades' => '/pages/admin/grades.php',
             ],
             'teacher' => [
                 'dashboard' => '/pages/teacher/dashboard.php',

@@ -6,7 +6,7 @@ The administrator page reads teacher and student accounts from MariaDB and conta
 
 - `app/Controllers/AdminUsersController.php` reads form values, validates account data, and calls the user model.
 - `app/Controllers/ReadOperationsController.php` loads the teacher and student list before the page is rendered.
-- `app/Models/UserModel.php` reads and changes the `users` table with PDO prepared statements. It hashes passwords with `password_hash()` and never returns password hashes to the view.
+- `app/Models/UserModel.php` reads and changes the `users` table with PDO prepared statements. It hashes passwords with `password_hash()`, never returns password hashes to the view, and blocks deletion of users who still have project assignments.
 - `app/Views/pages/admin/users.php` renders the database results and the create, edit, and delete forms.
 - `public/assets/js/admin-users.js` filters rows, opens the shared modal, and asks for delete confirmation. JavaScript does not save account data.
 - `app/Core/RoleAuthorization.php` checks the current session identity before PHP accepts a POST change.
@@ -29,7 +29,7 @@ The controller checks required values, database length limits, allowed roles, du
 1. Configure `.env`, create the schema and seed data, and run `php tests/check_database_connection.php`.
 2. Start PHP with `php -S 127.0.0.1:8000 -t public` and open `http://127.0.0.1:8000/?page=users&role=admin`.
 3. Confirm the teacher/student rows are displayed when PDO can connect.
-4. Create, edit, and delete a test teacher or student. Confirm each change remains after reloading the page.
+4. Create and edit a test teacher or student. Delete a user with no project assignments and confirm it remains absent after reloading. Try deleting an assigned user and confirm PHP blocks the action without removing that user's assignments or grades.
 5. Sign out and sign in as a teacher or student. Opening the administrator user-management page must show the role access message, and POST changes must be rejected.
 
-Use a disposable development database. Deleting a user also removes linked assignments and grades because the schema uses cascading foreign keys.
+Use a disposable development database. User accounts with project assignments cannot be deleted: their assignments may be referenced by grades, and the database schema would otherwise cascade-delete that data. The administrator account is not listed as a manageable teacher or student and cannot be deleted through this form.

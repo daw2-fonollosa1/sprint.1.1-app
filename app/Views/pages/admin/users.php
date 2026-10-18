@@ -26,7 +26,7 @@ $formUrl = '/?page=users&amp;role=admin&amp;filter=' . $escapeUserValue($activeF
         <div>
             <p class="eyebrow mb-2">Administració</p>
             <h1 class="h2 mb-1" id="users-title">Gestió d’usuaris</h1>
-            <p class="text-secondary mb-0">Consulta i edita els comptes de professorat i alumnat.</p>
+            <p class="text-secondary mb-0">Consulta, edita i elimina els comptes de professorat i alumnat.</p>
         </div>
         <button class="btn btn-primary" type="button" data-create-user>Crea un usuari</button>
     </div>
@@ -112,8 +112,8 @@ $formUrl = '/?page=users&amp;role=admin&amp;filter=' . $escapeUserValue($activeF
                     </tbody>
                 </table>
             </div>
-            <!-- The database schema uses cascading foreign keys for these linked records. -->
-            <p class="small text-secondary mb-0">En eliminar un compte també s’eliminaran les assignacions i qualificacions vinculades.</p>
+            <!-- Accounts with project assignments are protected from cascading deletion. -->
+            <p class="small text-secondary mb-0">Per protegir les dades, no es poden eliminar comptes amb projectes assignats. El compte d’administrador no apareix en aquesta llista.</p>
         </div>
     </div>
 

@@ -81,6 +81,6 @@ Configure `.env` and start MariaDB. Import the schema and seed data in step 1 be
 
 ## Limitations
 
-- These handlers update existing records only; project, item, assignment, user, and grade creation and deletion remain in their existing operations.
+- These handlers update existing records only. Creation remains in the existing create forms, and deletion is handled separately by `DeleteOperationsController.php` as described in `docs/delete-operations.md`.
 - The database schema's `ON DELETE CASCADE` behavior is unchanged. This controller protects grade records when assignment forms are edited.
 - This is a classroom application. Production deployment still needs appropriate operational protections such as HTTPS, backups, and request rate limits.

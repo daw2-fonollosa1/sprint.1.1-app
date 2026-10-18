@@ -65,7 +65,7 @@ These checks use the server-side PHP session. A role or record owner supplied in
 
 ## Manual test checklist
 
-There are no automated update-operation tests in the repository. Use a disposable development database or make a backup first because successful edits remain in MariaDB.
+Automated update tests run against the dedicated database described in [Automated tests](testing.md). Use a disposable development database or make a backup before following the browser checklist because those successful edits remain in MariaDB.
 
 Configure `.env` and start MariaDB. Import the schema and seed data in step 1 below. From the project root, start the PHP development server with `php -S 127.0.0.1:8000 -t public`, then open `http://127.0.0.1:8000/` in a browser.
 

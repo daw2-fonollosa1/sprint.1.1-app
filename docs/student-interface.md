@@ -39,7 +39,7 @@ The requirements do not set a grading scale or a rounding rule. The view trims t
 
 ## Manual test checklist
 
-There are no automated read-operation tests in the repository. The seed data can be used for these checks after MariaDB and `pdo_mysql` are available. Sign in as `student-marc` or `student-laura` with the development password `12345`:
+The automated suite checks the student's database reads, privacy filter, and grade averages in [Automated tests](testing.md). The seed data can also be used for these manual checks after MariaDB and `pdo_mysql` are available. Sign in as `student-marc` or `student-laura` with the development password `12345`:
 
 1. Sign in as administrator and open `/?page=dashboard&role=admin`. Check that the user, project, item, and grade totals match the database.
 2. Sign in as `teacher-marta` or `teacher-joan`. Confirm the dashboard and project pages show only the three projects assigned to that account, with their associated students and items.

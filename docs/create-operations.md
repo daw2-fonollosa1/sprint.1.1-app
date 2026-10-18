@@ -92,7 +92,7 @@ After MariaDB and `pdo_mysql` are available, import the seed and sign in with an
 
 Check persistence by reloading the relevant page or querying the corresponding table. For assignments, query the matching junction table. For grades, query `grades` and verify that `teacher_id` identifies the author.
 
-There are no automated create-operation tests in the repository yet. Real valid and invalid database form submissions require MariaDB and PHP's `pdo_mysql` extension. Use the test accounts described in `docs/login-implementation.md` after loading the seed data.
+Automated database and validation tests are now available. See [Automated tests](testing.md) for the dedicated MariaDB test database setup and `composer test` command. The suite checks model writes and invalid controller submissions without using the development seed data.
 
 ## Scope limits
 

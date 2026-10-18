@@ -68,7 +68,7 @@ The login verifies the password hash from the `users` row and stores the verifie
 
 ## Checks and manual test plan
 
-There are no automated dashboard read tests in the repository. Run syntax and connection checks from the repository root:
+The automated suite includes database-backed reads for projects, items, assignments, grades, and student grade averages. See [Automated tests](testing.md) to configure its isolated MariaDB database. Run syntax and connection checks from the repository root:
 
 ```bash
 find app public tests -name '*.php' -print0 | xargs -0 -n1 php -l

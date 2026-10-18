@@ -5,36 +5,216 @@
     --app-muted: #667085;
     --app-surface: #ffffff;
     --app-canvas: #f4f6fa;
-    --app-brand: #173b63;
 }
 
 body {
-    /* A full-height flex column keeps the footer below short pages. */
+    /* Keep the page canvas visible behind the shared desktop and mobile layouts. */
     min-height: 100vh;
-    display: flex;
-    flex-direction: column;
     color: var(--app-ink);
     background: var(--app-canvas);
 }
 
-.app-navbar {
-    /* Override Bootstrap's default navbar background with the project's brand color. */
-    background: var(--app-brand);
+.app-shell {
+    /* Put the role navigation and page content next to each other on wide screens. */
+    display: flex;
+    min-height: 100vh;
 }
 
-.app-navbar .nav-link {
-    /* Rounded corners make the active and hover states read as a single control. */
-    border-radius: 0.375rem;
+.app-sidebar {
+    /* Use a deep blue gradient so white Bootstrap navigation controls stay easy to read. */
+    --bs-offcanvas-width: 17rem;
+    background: linear-gradient(160deg, #102d4f 0%, #123e66 56%, #0a596f 100%);
+    color: #ffffff;
 }
 
-.app-navbar .nav-link.active {
-    /* Highlight the current page so users can see where they are in the section menu. */
+.app-sidebar-header {
+    /* Keep the mobile close control on the same colored surface as the sidebar. */
+    color: #ffffff;
+    padding: 1.25rem 1rem 0.5rem;
+}
+
+.app-sidebar-brand-card {
+    /* Group the application title and current role into one clear Bootstrap-style panel. */
+    border: 1px solid rgb(255 255 255 / 15%);
+    background: linear-gradient(145deg, rgb(255 255 255 / 12%), rgb(255 255 255 / 5%));
+    box-shadow: 0 0.75rem 1.75rem rgb(0 0 0 / 10%);
+}
+
+.app-sidebar-brand {
+    /* Keep the brand link aligned and readable against the dark sidebar background. */
+    color: #ffffff;
+}
+
+.app-sidebar-brand:hover {
+    color: #ffffff;
+}
+
+.app-sidebar-logo {
+    /* A compact white logo tile creates a visual anchor at the top of the sidebar. */
+    flex: 0 0 2.8rem;
+    width: 2.8rem;
+    height: 2.8rem;
+    color: #0b5273;
+    background: #ffffff;
+    box-shadow: 0 0.35rem 0.9rem rgb(0 0 0 / 16%);
+}
+
+.app-sidebar-logo svg {
+    width: 1.65rem;
+    height: 1.65rem;
+}
+
+.app-sidebar-kicker,
+.app-sidebar-section-label {
+    color: rgb(255 255 255 / 65%);
+    font-size: 0.66rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+}
+
+.app-sidebar-title {
+    margin-top: 0.1rem;
+    font-size: 1rem;
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+.app-sidebar-role {
+    border: 1px solid rgb(255 255 255 / 12%);
+    background: rgb(0 0 0 / 12%);
+}
+
+.app-sidebar-role-dot {
+    flex: 0 0 0.55rem;
+    width: 0.55rem;
+    height: 0.55rem;
+    border-radius: 50%;
+    background: #65d8b1;
+    box-shadow: 0 0 0 0.2rem rgb(101 216 177 / 16%);
+}
+
+.app-sidebar-role-label {
+    color: rgb(255 255 255 / 62%);
+    font-size: 0.68rem;
+    line-height: 1.1;
+}
+
+.app-sidebar-role-name {
+    margin-top: 0.15rem;
+    color: #ffffff;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.app-sidebar-body {
+    /* Stack the menu and keep the sign-out button at the bottom of a tall sidebar. */
+    display: flex;
+    flex-direction: column;
+    min-height: 100%;
+    padding: 1.5rem 1rem;
+}
+
+.app-sidebar .nav-link {
+    /* Give each side-menu link a clear hit area and consistent rounded shape. */
+    padding: 0.7rem 0.85rem;
+    border-radius: 0.65rem;
+    color: rgb(255 255 255 / 82%);
+    transition: color 150ms ease, background-color 150ms ease, transform 150ms ease;
+}
+
+.app-sidebar .nav-link:hover {
+    /* Give hovered links a light Bootstrap-like highlight on the blue background. */
     color: #ffffff;
     background: rgb(255 255 255 / 14%);
+    transform: translateX(0.15rem);
+}
+
+.app-sidebar .nav-link.active {
+    /* Use a darker highlight so the selected link stays easy to read. */
+    color: #ffffff;
+    background: rgb(255 255 255 / 17%);
+    font-weight: 600;
+    box-shadow: inset 0.2rem 0 0 #8ce4ce;
+}
+
+.app-sidebar .nav-link:focus-visible {
+    outline: 2px solid #ffffff;
+    outline-offset: 2px;
+}
+
+.app-sidebar-logout {
+    border-top: 1px solid rgb(255 255 255 / 18%);
+}
+
+.app-logout-button {
+    min-height: 3.65rem;
+    padding: 0.55rem 0.7rem;
+    border: 1px solid rgb(255 255 255 / 80%);
+    border-radius: 0.85rem;
+    color: #123e66;
+    box-shadow: 0 0.5rem 1.1rem rgb(0 0 0 / 12%);
+    transition: transform 150ms ease, box-shadow 150ms ease, background-color 150ms ease;
+}
+
+.app-logout-button:hover {
+    color: #0b2f50;
+    background: #eaf7ff;
+    box-shadow: 0 0.7rem 1.3rem rgb(0 0 0 / 18%);
+    transform: translateY(-1px);
+}
+
+.app-logout-icon {
+    flex: 0 0 2.35rem;
+    width: 2.35rem;
+    height: 2.35rem;
+    color: #ffffff;
+    background: #155b7e;
+}
+
+.app-logout-icon svg {
+    width: 1.35rem;
+    height: 1.35rem;
+}
+
+.app-logout-title {
+    font-size: 0.85rem;
+    font-weight: 700;
+    line-height: 1.15;
+}
+
+.app-logout-caption {
+    margin-top: 0.2rem;
+    color: #667085;
+    font-size: 0.7rem;
+    line-height: 1.1;
+}
+
+.app-logout-arrow {
+    padding: 0 0.25rem;
+    color: #155b7e;
+    font-size: 1.3rem;
+    line-height: 1;
+}
+
+.app-page {
+    /* Let the content column fill all available space beside the sidebar. */
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.app-mobile-header {
+    /* Keep the mobile menu button available while a long page scrolls. */
+    position: sticky;
+    top: 0;
+    z-index: 1020;
+    border-bottom: 1px solid #e4e7ec;
+    background: var(--app-surface);
 }
 
 .app-main {
-    /* Let the main area use spare vertical space so the footer stays near the bottom. */
     flex: 1;
 }
 
@@ -59,4 +239,23 @@ body {
     /* Keep footer text visually quieter than the page's main content. */
     color: var(--app-muted);
     font-size: 0.875rem;
+}
+
+@media (min-width: 992px) {
+    .app-sidebar {
+        /* Keep the desktop sidebar visible while the user scrolls through a long page. */
+        position: sticky;
+        top: 0;
+        align-self: flex-start;
+        flex: 0 0 17rem;
+        width: 17rem;
+        min-width: 17rem;
+        height: 100vh;
+    }
+
+    .app-sidebar-body {
+        /* Let the desktop sign-out form settle at the bottom of the available sidebar. */
+        height: 100%;
+        overflow-y: auto;
+    }
 }

@@ -19,31 +19,54 @@
     <link rel="stylesheet" href="/assets/css/styles.css">
 </head>
 <body>
-    <!-- Shared navigation is included by every page using this layout. -->
-    <?php require dirname(__DIR__) . '/partials/navigation.php'; ?>
+    <!-- The shared shell places the role navigation beside each server-rendered page. -->
+    <div class="app-shell">
+        <?php require dirname(__DIR__) . '/partials/navigation.php'; ?>
 
-    <!-- This shared layout gives every role page the same responsive frame. -->
-    <main class="container app-main py-4 py-lg-5">
-        <?php if ($readAccessError !== ''): ?>
-            <div class="alert alert-warning" role="alert">
-                <h1 class="h5">Accés a les dades</h1>
-                <p class="mb-0"><?= htmlspecialchars($readAccessError, ENT_QUOTES, 'UTF-8') ?></p>
-            </div>
-        <?php elseif ($readDatabaseError !== ''): ?>
-            <div class="alert alert-danger" role="alert">
-                <h1 class="h5">No s’han pogut carregar les dades</h1>
-                <p class="mb-0"><?= htmlspecialchars($readDatabaseError, ENT_QUOTES, 'UTF-8') ?></p>
-            </div>
-        <?php else: ?>
-            <!-- PHP includes the selected view after the controller has prepared its data. -->
-            <?php require dirname(__DIR__) . $pageView; ?>
-        <?php endif; ?>
-    </main>
+        <div class="app-page">
+            <!-- On mobile, open the same navigation panel as a Bootstrap offcanvas menu. -->
+            <header class="app-mobile-header d-lg-none">
+                <div class="container d-flex align-items-center justify-content-between py-2">
+                    <a class="navbar-brand fw-semibold mb-0" href="/?page=dashboard&amp;role=<?= rawurlencode($currentRoleKey) ?>">
+                        Projectes DAW2
+                    </a>
+                    <button
+                        class="btn btn-outline-primary"
+                        type="button"
+                        data-bs-toggle="offcanvas"
+                        data-bs-target="#main-navigation"
+                        aria-controls="main-navigation"
+                        aria-label="Obre la navegació"
+                    >
+                        Menú
+                    </button>
+                </div>
+            </header>
 
-    <!-- Keep a consistent footer at the bottom of the shared application layout. -->
-    <footer class="container app-footer py-4">
-        <p class="mb-0">Projecte de gestió de projectes globalitzats · DAW2</p>
-    </footer>
+            <!-- The content area expands to fill the space beside the desktop sidebar. -->
+            <main class="container app-main py-4 py-lg-5">
+                <?php if ($readAccessError !== ''): ?>
+                    <div class="alert alert-warning" role="alert">
+                        <h1 class="h5">Accés a les dades</h1>
+                        <p class="mb-0"><?= htmlspecialchars($readAccessError, ENT_QUOTES, 'UTF-8') ?></p>
+                    </div>
+                <?php elseif ($readDatabaseError !== ''): ?>
+                    <div class="alert alert-danger" role="alert">
+                        <h1 class="h5">No s’han pogut carregar les dades</h1>
+                        <p class="mb-0"><?= htmlspecialchars($readDatabaseError, ENT_QUOTES, 'UTF-8') ?></p>
+                    </div>
+                <?php else: ?>
+                    <!-- PHP includes the selected view after the controller has prepared its data. -->
+                    <?php require dirname(__DIR__) . $pageView; ?>
+                <?php endif; ?>
+            </main>
+
+            <!-- Keep the footer aligned with the page content rather than the sidebar. -->
+            <footer class="container app-footer py-4">
+                <p class="mb-0">Projecte de gestió de projectes globalitzats · DAW2</p>
+            </footer>
+        </div>
+    </div>
 
     <!-- Bootstrap's JavaScript bundle makes the responsive navigation toggle open and close. -->
     <script

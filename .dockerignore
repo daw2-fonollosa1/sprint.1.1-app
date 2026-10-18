@@ -1,0 +1,9 @@
+# Do not send Git history or local secrets into the image build context.
+.git
+.env
+
+# These files are generated locally and are not needed to build the PHP application.
+vendor/
+.DS_Store
+.vscode/
+*.log

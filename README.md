@@ -79,6 +79,7 @@ tests/
 └── check_database_connection.php
 Dockerfile
 docker-compose.yml
+.dockerignore
 composer.json
 .env.example
 .gitignore
@@ -105,6 +106,43 @@ README.md
 - [Administrator user management](docs/administrator-user-management.md)
 - [Teacher interface prototype](docs/teacher-interface.md)
 - [Student interface prototype](docs/student-interface.md)
+
+## Run with Docker Compose
+
+Docker Compose starts Apache/PHP and MariaDB in separate containers. From the repository root, create your local environment file if you do not already have one, then edit both development passwords:
+
+```bash
+cp -n .env.example .env
+```
+
+Set `DB_PASSWORD` and `DB_ROOT_PASSWORD` in `.env` to local development values. The `.env` file is ignored by Git. The PHP container receives the database settings from Compose, and its database host is set to the MariaDB service name `db`.
+
+Build the PHP image and start both containers:
+
+```bash
+docker compose up --build -d
+```
+
+Open the application at [http://127.0.0.1:8080/](http://127.0.0.1:8080/). If you changed `APP_PORT` in `.env`, use that port instead. On the first start with a new database volume, MariaDB runs `database/schema.sql` followed by `database/seed.sql`. These initialization scripts do not rerun over an existing database volume.
+
+Useful commands:
+
+```bash
+docker compose ps
+docker compose logs -f
+docker compose exec app php tests/check_database_connection.php
+docker compose down
+```
+
+`docker compose down` stops and removes the containers but preserves the named `mariadb_data` volume. The database records are still there the next time you run `docker compose up -d`. **Do not run `docker compose down -v` unless you intend to permanently delete the stored database volume and all its data.**
+
+To check that database data survives a restart, run this command before and after `docker compose down` followed by `docker compose up -d`. Enter the `DB_ROOT_PASSWORD` from `.env` when prompted; the user count should stay the same:
+
+```bash
+docker compose exec db mariadb -uroot -p -N -e "SELECT COUNT(*) FROM daw2_project_manager.users;"
+```
+
+To rebuild the PHP image after changing application files, run `docker compose up --build -d` again. This class-project setup is for local development and is not production-ready.
 
 ## Run the PHP application
 

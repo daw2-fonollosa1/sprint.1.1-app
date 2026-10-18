@@ -6,7 +6,7 @@ This document describes the reusable PDO connection used by the PHP application.
 
 - `app/Core/Database.php` creates and reuses the PDO connection.
 - `config/database.php` reads the database settings from system environment variables or the local `.env` file.
-- `.env.example` shows the setting names and safe placeholder values to use for local development.
+- `.env.example` shows the setting names and development placeholders for local PHP or Docker Compose.
 - `tests/check_database_connection.php` is a command-line check that opens the connection and runs `SELECT 1`.
 - `docs/database-connection.md` explains how to configure and check the connection.
 - `README.md` lists the new files and describes the current database status.
@@ -35,6 +35,8 @@ System environment variables with these names take priority over values from `.e
 mariadb -u root -p < database/schema.sql
 mariadb -u root -p daw2_project_manager < database/seed.sql
 ```
+
+When the application runs in Docker Compose, Compose provides the same settings to PHP as environment variables and sets `DB_HOST` to the MariaDB service name `db`. See the Docker instructions in `README.md` for container setup.
 
 ## How the connection works
 
@@ -71,5 +73,5 @@ If it fails, it prints a short message asking you to check MariaDB, the PDO MySQ
 ## Outside this issue
 
 - The application does not provide public registration or password reset. The administrator creates teacher and student accounts.
-- Docker configuration is unchanged.
+- Docker Compose starts the PHP and MariaDB services; it is documented in `README.md`.
 - Live database login and dashboard checks still require MariaDB and PHP's `pdo_mysql` extension.

@@ -59,7 +59,7 @@ The checks and deletes for users, projects, items, and assignments run inside a 
 
 ## Manual test checklist
 
-There are no automated delete-operation tests in the repository. Use a disposable development database because successful deletes remain in MariaDB. Configure `.env`, start MariaDB, import `database/schema.sql` and `database/seed.sql`, and run `php tests/check_database_connection.php`. From the repository root, run `php -S 127.0.0.1:8000 -t public` and open `http://127.0.0.1:8000/`.
+The automated tests for delete behavior use the dedicated database described in [Automated tests](testing.md) and remove their own fixture rows. The browser checklist below performs permanent changes, so use a disposable development database for those steps. Configure `.env`, start MariaDB, import `database/schema.sql` and `database/seed.sql`, and run `php tests/check_database_connection.php`. From the repository root, run `php -S 127.0.0.1:8000 -t public` and open `http://127.0.0.1:8000/`.
 
 1. Sign in as `admin-demo` using the development password in `docs/login-implementation.md`.
 2. On **Gestió d’usuaris**, try deleting `teacher-marta`. PHP should block the request because she has project assignments. Create a new teacher with no assignments, delete that account, reload, and confirm it remains absent. Try changing a delete form's hidden ID to the administrator's ID (`1` in the seed data); PHP must reject it.

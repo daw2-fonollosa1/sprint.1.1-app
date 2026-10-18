@@ -63,6 +63,7 @@ docs/
 ├── learning-objectives.md
 ├── login-implementation.md
 ├── requirements.md
+├── testing.md
 ├── student-interface.md
 ├── update-operations.md
 ├── teacher-interface.md
@@ -76,11 +77,14 @@ public/
 routes/
 storage/
 tests/
+├── Integration/
+├── bootstrap.php
 └── check_database_connection.php
 Dockerfile
 docker-compose.yml
 .dockerignore
 composer.json
+phpunit.xml
 .env.example
 .gitignore
 README.md
@@ -102,6 +106,7 @@ README.md
 - [Read operations](docs/read-operations.md)
 - [Update operations](docs/update-operations.md)
 - [Delete operations](docs/delete-operations.md)
+- [Automated tests](docs/testing.md)
 - [Administrator interface prototype](docs/administrator-interface.md)
 - [Administrator user management](docs/administrator-user-management.md)
 - [Teacher interface prototype](docs/teacher-interface.md)
@@ -153,3 +158,14 @@ php -S 127.0.0.1:8000 -t public
 ```
 
 Configure MariaDB and PHP's `pdo_mysql` extension, then load `database/schema.sql` and `database/seed.sql` as described in [Login and sessions](docs/login-implementation.md). Start the server and open `http://127.0.0.1:8000/`. Bootstrap is loaded from its CDN, so the browser needs an internet connection to download it.
+
+## Run the automated tests
+
+Automated tests use PHPUnit and a dedicated MariaDB database ending in `_test`. Do not point the tests at the development database. Follow [docs/testing.md](docs/testing.md) to create the test database and set `TEST_DB_*` variables, then run:
+
+```bash
+composer install
+composer test
+```
+
+The tests create temporary records and remove them after each test. They do not use the development seed data.

@@ -1,0 +1,44 @@
+services:
+  # Apache and PHP serve the MVC application from the public/ directory.
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "${APP_PORT:-8080}:80"
+    environment:
+      # Docker containers find MariaDB by its Compose service name, not by localhost.
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_NAME: ${DB_NAME:-daw2_project_manager}
+      DB_USER: ${DB_USER:-daw2_app}
+      DB_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in the local .env file}
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # MariaDB runs separately and initializes the schema and sample rows on first startup.
+  db:
+    image: mariadb:11.4
+    environment:
+      MARIADB_DATABASE: ${DB_NAME:-daw2_project_manager}
+      MARIADB_USER: ${DB_USER:-daw2_app}
+      MARIADB_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in the local .env file}
+      MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:?Set DB_ROOT_PASSWORD in the local .env file}
+    volumes:
+      # This named volume keeps database files after containers are stopped or removed.
+      - mariadb_data:/var/lib/mysql
+      # MariaDB runs these scripts in filename order only when the data directory is empty.
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ./database/seed.sql:/docker-entrypoint-initdb.d/02-seed.sql:ro
+    healthcheck:
+      # The official image helper waits until MariaDB accepts connections and InnoDB is ready.
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+
+# Compose creates this persistent volume for MariaDB and reuses it on later starts.
+volumes:
+  mariadb_data:

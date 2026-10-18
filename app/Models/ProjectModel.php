@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-/** Reads, creates, and updates projects using the application's PDO connection. */
+/** Reads, creates, updates, and safely deletes projects through PDO. */
 class ProjectModel
 {
     private PDO $connection;
@@ -137,5 +137,56 @@ class ProjectModel
             'name' => $name,
             'description' => $description,
         ]);
+    }
+
+    /** Delete a project only when it has no linked assignments or grades. */
+    public function deleteIfUnused(int $id): string
+    {
+        $this->connection->beginTransaction();
+
+        try {
+            // Lock the project row while checking its children so a new assignment
+            // cannot appear between the safety check and the DELETE statement.
+            $project = $this->connection->prepare(
+                'SELECT id FROM projects WHERE id = :id FOR UPDATE',
+            );
+            $project->execute(['id' => $id]);
+
+            if ($project->fetchColumn() === false) {
+                $this->connection->rollBack();
+                return 'missing';
+            }
+
+            $relatedRows = $this->connection->prepare(
+                'SELECT
+                    EXISTS (SELECT 1 FROM teacher_projects WHERE project_id = :teacher_project_id)
+                    OR EXISTS (SELECT 1 FROM student_projects WHERE project_id = :student_project_id)
+                    OR EXISTS (SELECT 1 FROM project_evaluable_items WHERE project_id = :item_project_id)
+                    OR EXISTS (SELECT 1 FROM grades WHERE project_id = :grade_project_id)',
+            );
+            $relatedRows->execute([
+                'teacher_project_id' => $id,
+                'student_project_id' => $id,
+                'item_project_id' => $id,
+                'grade_project_id' => $id,
+            ]);
+
+            if ((bool) $relatedRows->fetchColumn()) {
+                $this->connection->rollBack();
+                return 'has_related_data';
+            }
+
+            $delete = $this->connection->prepare('DELETE FROM projects WHERE id = :id');
+            $delete->execute(['id' => $id]);
+            $this->connection->commit();
+
+            return $delete->rowCount() > 0 ? 'deleted' : 'missing';
+        } catch (Throwable $error) {
+            if ($this->connection->inTransaction()) {
+                $this->connection->rollBack();
+            }
+
+            throw $error;
+        }
     }
 }

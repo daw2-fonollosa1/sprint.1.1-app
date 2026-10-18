@@ -4,6 +4,7 @@
 $escapeItemValue = static fn (string|int $value): string => htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8');
 $operationData = $createOperationsData;
 $updateData = $updateOperationsData;
+$deleteData = $deleteOperationsData;
 $submittedItem = $operationData['submitted'];
 $formUrl = '/?page=evaluable-items&amp;role=admin';
 ?>
@@ -47,6 +48,25 @@ $formUrl = '/?page=evaluable-items&amp;role=admin';
             <p class="mb-2">Revisa aquestes dades:</p>
             <ul class="mb-0">
                 <?php foreach ($updateData['validationErrors'] as $error): ?>
+                    <li><?= $escapeItemValue($error) ?></li>
+                <?php endforeach; ?>
+            </ul>
+        </div>
+    <?php endif; ?>
+    <?php if ($deleteData['feedback'] !== ''): ?>
+        <div class="alert alert-success" role="status"><?= $escapeItemValue($deleteData['feedback']) ?></div>
+    <?php endif; ?>
+    <?php if ($deleteData['accessError'] !== ''): ?>
+        <div class="alert alert-warning" role="alert"><?= $escapeItemValue($deleteData['accessError']) ?></div>
+    <?php endif; ?>
+    <?php if ($deleteData['databaseError'] !== ''): ?>
+        <div class="alert alert-danger" role="alert"><?= $escapeItemValue($deleteData['databaseError']) ?></div>
+    <?php endif; ?>
+    <?php if ($deleteData['validationErrors'] !== []): ?>
+        <div class="alert alert-danger" role="alert">
+            <p class="mb-2">No s’ha pogut completar l’eliminació:</p>
+            <ul class="mb-0">
+                <?php foreach ($deleteData['validationErrors'] as $error): ?>
                     <li><?= $escapeItemValue($error) ?></li>
                 <?php endforeach; ?>
             </ul>
@@ -113,6 +133,11 @@ $formUrl = '/?page=evaluable-items&amp;role=admin';
                                             <button class="btn btn-primary btn-sm" type="submit">Desa els canvis</button>
                                         </form>
                                     </details>
+                                    <form class="mt-2" method="post" action="<?= $formUrl ?>" onsubmit="return confirm('Vols eliminar aquest ítem avaluable? PHP només el podrà eliminar si no està assignat a cap projecte.')">
+                                        <input type="hidden" name="action" value="delete_item">
+                                        <input type="hidden" name="id" value="<?= $itemId ?>">
+                                        <button class="btn btn-outline-danger btn-sm" type="submit">Elimina l’ítem</button>
+                                    </form>
                                 </td>
                             </tr>
                         <?php endforeach; ?>

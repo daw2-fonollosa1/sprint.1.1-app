@@ -5,6 +5,7 @@
 $escapeGradeValue = static fn (string|int $value): string => htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8');
 $operationData = $createOperationsData;
 $updateData = $updateOperationsData;
+$deleteData = $deleteOperationsData;
 $selectedProjectId = $operationData['selectedProjectId'];
 $submitted = $operationData['submitted'];
 $requestedStudentId = $submitted['student_id'] ?? ($_GET['student_id'] ?? '');
@@ -72,6 +73,25 @@ foreach ($operationData['teacherProjects'] as $project) {
             <p class="mb-2">Revisa aquestes dades:</p>
             <ul class="mb-0">
                 <?php foreach ($updateData['validationErrors'] as $error): ?>
+                    <li><?= $escapeGradeValue($error) ?></li>
+                <?php endforeach; ?>
+            </ul>
+        </div>
+    <?php endif; ?>
+    <?php if ($deleteData['feedback'] !== ''): ?>
+        <div class="alert alert-success" role="status"><?= $escapeGradeValue($deleteData['feedback']) ?></div>
+    <?php endif; ?>
+    <?php if ($deleteData['accessError'] !== ''): ?>
+        <div class="alert alert-warning" role="alert"><?= $escapeGradeValue($deleteData['accessError']) ?></div>
+    <?php endif; ?>
+    <?php if ($deleteData['databaseError'] !== ''): ?>
+        <div class="alert alert-danger" role="alert"><?= $escapeGradeValue($deleteData['databaseError']) ?></div>
+    <?php endif; ?>
+    <?php if ($deleteData['validationErrors'] !== []): ?>
+        <div class="alert alert-danger" role="alert">
+            <p class="mb-2">No s’ha pogut completar l’eliminació:</p>
+            <ul class="mb-0">
+                <?php foreach ($deleteData['validationErrors'] as $error): ?>
                     <li><?= $escapeGradeValue($error) ?></li>
                 <?php endforeach; ?>
             </ul>
@@ -174,6 +194,12 @@ foreach ($operationData['teacherProjects'] as $project) {
                                             <button class="btn btn-primary btn-sm" type="submit">Desa la nota</button>
                                         </form>
                                     </details>
+                                    <form class="mt-2" method="post" action="/?page=grades&amp;role=teacher" onsubmit="return confirm('Vols eliminar només aquesta qualificació? Les notes d’altres professors no canviaran.')">
+                                        <input type="hidden" name="action" value="delete_grade">
+                                        <input type="hidden" name="id" value="<?= $gradeId ?>">
+                                        <input type="hidden" name="project_id" value="<?= (int) $grade['project_id'] ?>">
+                                        <button class="btn btn-sm btn-outline-danger" type="submit">Elimina la nota</button>
+                                    </form>
                                 </td>
                             </tr>
                         <?php endforeach; ?>

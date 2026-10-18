@@ -16,13 +16,14 @@ The login checks the password against the `users` table and stores the verified 
 - `app/Models/ProjectModel.php` — Reads project rows.
 - `app/Models/EvaluableItemModel.php` — Reads evaluable-item rows.
 - `app/Models/ProjectAssignmentModel.php` — Reads the teachers, students, and items assigned to each project.
-- `app/Models/GradeModel.php` — Counts individual grades for the administrator dashboard.
+- `app/Models/GradeModel.php` — Counts individual grades for the dashboard and loads the fields shown on the administrator grade-management page.
 - `app/Views/layouts/main.php` — Shows safe access or database messages and includes the selected PHP view.
 - `app/Views/partials/navigation.php` — Shows only the authenticated role's links and a sign-out form.
 - `app/Views/pages/admin/dashboard.php` — Displays current project, user, item, and grade counts and a project list.
 - `app/Views/pages/admin/users.php` — Displays database users with the existing role filters.
 - `app/Views/pages/admin/projects.php` — Displays projects and the names assigned to each one.
 - `app/Views/pages/admin/evaluable_items.php` — Displays evaluable items from MariaDB.
+- `app/Views/pages/admin/grades.php` — Lists individual grades so an administrator can choose one record for deletion.
 - `docs/read-operations.md` — Explains the complete read flow and testing steps.
 
 ## How administrator data is loaded

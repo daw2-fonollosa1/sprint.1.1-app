@@ -10,7 +10,7 @@ The role dashboards now read their records from MariaDB through the existing PDO
 - `app/Controllers/ReadOperationsController.php` — Collects page data by calling the existing PDO models. It does not process create forms.
 - `app/Models/UserModel.php` — Reads administrator user lists and confirms that a session ID has the expected role in MariaDB.
 - `app/Models/ProjectAssignmentModel.php` — Adds a read method for the teachers, students, and evaluable items already linked to each project.
-- `app/Models/GradeModel.php` — Counts all individual grades for the administrator summary and provides project, student, and item choices to the existing teacher form.
+- `app/Models/GradeModel.php` — Counts all individual grades for the administrator summary, provides project/student/item choices to the teacher form, and loads grade labels used by the administrator delete list.
 - `app/Models/TeacherDashboardData.php` — Collects the projects, students, items, grade count, and pending grade count for one teacher.
 - `app/Models/StudentDashboardData.php` — Collects one student's assigned projects and items, individual grades, and per-item averages.
 - `app/Controllers/CreateOperationsController.php` — Processes create form submissions and returns feedback. It no longer loads the project, item, student, or teacher lists for the views.
@@ -43,7 +43,7 @@ The existing `ProjectModel.php`, `EvaluableItemModel.php`, `app/Views/pages/admi
 7. The model runs SQL and returns rows as PHP arrays. Views loop through those arrays and render ordinary HTML.
 8. Views use `htmlspecialchars()` for database text. IDs used in links are converted to integers. Database exceptions go to the server log, while the page displays a general message in Catalan.
 
-The administrator summary counts projects, teachers, students, evaluable items, and individual grade rows. The administrator project table reads names from `teacher_projects`, `student_projects`, and `project_evaluable_items`.
+The administrator summary counts projects, teachers, students, evaluable items, and individual grade rows. The administrator project table reads names from `teacher_projects`, `student_projects`, and `project_evaluable_items`. The administrator **Qualificacions** page reads the fields needed to identify each individual grade before a delete request.
 
 For a teacher, `TeacherDashboardData` begins with `teacher_projects`. Its student query joins those assigned projects to `student_projects`; its item query joins them to `project_evaluable_items`. The teacher's project ID is a prepared SQL value. Project details are found only within the resulting assigned project list.
 

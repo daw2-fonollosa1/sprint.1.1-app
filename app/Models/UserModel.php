@@ -223,24 +223,54 @@ class UserModel
         $statement->execute($values);
     }
 
-    /**
-     * Delete one teacher or student account.
-     * The database foreign keys remove linked assignments and grades with ON DELETE CASCADE.
-     * Return false when the ID did not match a managed user.
-     */
-    public function delete(int $id): bool
+    /** Delete an unassigned teacher or student without cascading into project data. */
+    public function deleteIfUnassigned(int $id): string
     {
-        $statement = $this->connection->prepare(
-            'DELETE FROM users
-             WHERE id = :id AND role IN (:teacher_role, :student_role)',
-        );
-        $statement->execute([
-            'id' => $id,
-            'teacher_role' => 'teacher',
-            'student_role' => 'student',
-        ]);
+        $this->connection->beginTransaction();
 
-        return $statement->rowCount() > 0;
+        try {
+            // Administrator accounts are excluded here, so a request cannot remove
+            // the application's only administrator.
+            $user = $this->connection->prepare(
+                'SELECT id FROM users
+                 WHERE id = :id AND role IN (:teacher_role, :student_role)
+                 FOR UPDATE',
+            );
+            $user->execute([
+                'id' => $id,
+                'teacher_role' => 'teacher',
+                'student_role' => 'student',
+            ]);
+
+            if ($user->fetchColumn() === false) {
+                $this->connection->rollBack();
+                return 'missing';
+            }
+
+            if ($this->hasProjectAssignments($id)) {
+                $this->connection->rollBack();
+                return 'has_assignments';
+            }
+
+            $delete = $this->connection->prepare(
+                'DELETE FROM users
+                 WHERE id = :id AND role IN (:teacher_role, :student_role)',
+            );
+            $delete->execute([
+                'id' => $id,
+                'teacher_role' => 'teacher',
+                'student_role' => 'student',
+            ]);
+            $this->connection->commit();
+
+            return $delete->rowCount() > 0 ? 'deleted' : 'missing';
+        } catch (Throwable $error) {
+            if ($this->connection->inTransaction()) {
+                $this->connection->rollBack();
+            }
+
+            throw $error;
+        }
     }
 
     private function makePasswordHash(string $password): string

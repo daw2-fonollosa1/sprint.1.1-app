@@ -91,6 +91,11 @@ class ReadOperationsController
         if ($pageKey === 'evaluable-items') {
             $data['formData']['items'] = (new EvaluableItemModel($connection))->getAll();
         }
+
+        if ($pageKey === 'grades') {
+            // These rows are needed to identify the individual records in the delete form.
+            $data['formData']['adminGrades'] = (new GradeModel($connection))->getAllForAdministrator();
+        }
     }
 
     /** Load only this teacher's projects and the choices linked to the selected project. */
@@ -154,7 +159,7 @@ class ReadOperationsController
         return null;
     }
 
-    /** Give every create form the same empty keys before its database rows are loaded. */
+    /** Give forms predictable empty keys before their database rows are loaded. */
     private function emptyFormData(): array
     {
         return [
@@ -168,6 +173,7 @@ class ReadOperationsController
             'gradeStudents' => [],
             'gradeItems' => [],
             'teacherGrades' => [],
+            'adminGrades' => [],
             'selectedProjectId' => '',
         ];
     }

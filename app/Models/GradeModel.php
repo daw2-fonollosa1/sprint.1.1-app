@@ -79,6 +79,25 @@ class GradeModel
         return $statement->fetchAll();
     }
 
+    /** Return the grade details needed by the administrator's grade-management page. */
+    public function getAllForAdministrator(): array
+    {
+        $statement = $this->connection->query(
+            'SELECT grades.id, grades.grade_value, projects.code AS project_code,
+                    projects.name AS project_name, students.full_name AS student_name,
+                    teachers.full_name AS teacher_name, evaluable_items.code AS item_code,
+                    evaluable_items.name AS item_name
+             FROM grades
+             INNER JOIN projects ON projects.id = grades.project_id
+             INNER JOIN users AS students ON students.id = grades.student_id
+             INNER JOIN users AS teachers ON teachers.id = grades.teacher_id
+             INNER JOIN evaluable_items ON evaluable_items.id = grades.evaluable_item_id
+             ORDER BY projects.name, students.full_name, evaluable_items.name, teachers.full_name',
+        );
+
+        return $statement->fetchAll();
+    }
+
     /** Find one grade only when it belongs to the teacher making the request. */
     public function findForTeacher(int $gradeId, int $teacherId): ?array
     {
@@ -89,6 +108,18 @@ class GradeModel
              LIMIT 1',
         );
         $statement->execute(['id' => $gradeId, 'teacher_id' => $teacherId]);
+        $grade = $statement->fetch();
+
+        return $grade === false ? null : $grade;
+    }
+
+    /** Find one grade row for an administrator's delete request. */
+    public function findById(int $gradeId): ?array
+    {
+        $statement = $this->connection->prepare(
+            'SELECT id, project_id, teacher_id FROM grades WHERE id = :id LIMIT 1',
+        );
+        $statement->execute(['id' => $gradeId]);
         $grade = $statement->fetch();
 
         return $grade === false ? null : $grade;
@@ -193,5 +224,21 @@ class GradeModel
             'id' => $gradeId,
             'teacher_id' => $teacherId,
         ]);
+    }
+
+    /** Delete exactly one grade row, optionally requiring the teacher who entered it. */
+    public function deleteOne(int $gradeId, ?int $teacherId = null): bool
+    {
+        if ($teacherId === null) {
+            $statement = $this->connection->prepare('DELETE FROM grades WHERE id = :id');
+            $statement->execute(['id' => $gradeId]);
+        } else {
+            $statement = $this->connection->prepare(
+                'DELETE FROM grades WHERE id = :id AND teacher_id = :teacher_id',
+            );
+            $statement->execute(['id' => $gradeId, 'teacher_id' => $teacherId]);
+        }
+
+        return $statement->rowCount() > 0;
     }
 }

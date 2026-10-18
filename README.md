@@ -4,7 +4,7 @@ This repository contains the PHP application for the individual Sprint 1.1 proje
 
 ## Project status
 
-The current implementation provides server-rendered PHP pages, role-specific navigation, and Bootstrap 5. Login checks usernames and password hashes in MariaDB through PDO, then stores the verified account ID and role in a PHP session. Read operations load administrator, teacher, and student data through PDO; create and update handlers save supported data through the same connection. There is no public registration, and pages check the session role before loading role-specific records or accepting writes.
+The current implementation provides server-rendered PHP pages, role-specific navigation, and Bootstrap 5. Login checks usernames and password hashes in MariaDB through PDO, then stores the verified account ID and role in a PHP session. Read operations load administrator, teacher, and student data through PDO; create, update, and delete handlers save supported changes through the same connection. There is no public registration, and pages check the session role before loading role-specific records or accepting writes.
 
 ## Technology requirements
 
@@ -23,6 +23,7 @@ app/
 ├── Controllers/
 │   ├── AdminUsersController.php
 │   ├── CreateOperationsController.php
+│   ├── DeleteOperationsController.php
 │   ├── DashboardController.php
 │   ├── LoginController.php
 │   ├── ReadOperationsController.php
@@ -55,6 +56,7 @@ config/
 docs/
 ├── administrator-interface.md
 ├── administrator-user-management.md
+├── delete-operations.md
 ├── decisions.md
 ├── database-schema.md
 ├── database-connection.md
@@ -85,7 +87,7 @@ README.md
 
 `public/` is the web document root. PHP views live under `app/Views/`; only the front controller and public assets should be directly served to the browser. Composer's `vendor/` directory is generated when dependencies are installed and is not committed.
 
-`LoginController.php` checks credentials through `UserModel.php`, creates the authenticated PHP session, and handles sign-out. `DashboardController.php` selects the requested page and checks the PHP session against the `users` table. `ReadOperationsController.php` gathers the database rows needed by that page, while `CreateOperationsController.php` and `UpdateOperationsController.php` handle their respective form submissions. `TeacherDashboardData.php` and `StudentDashboardData.php` prepare the related records for their role-specific views.
+`LoginController.php` checks credentials through `UserModel.php`, creates the authenticated PHP session, and handles sign-out. `DashboardController.php` selects the requested page and checks the PHP session against the `users` table. `ReadOperationsController.php` gathers the database rows needed by that page, while the create, update, and delete controllers handle their respective form submissions. `AdminUsersController.php` continues to manage teacher and student accounts. `TeacherDashboardData.php` and `StudentDashboardData.php` prepare the related records for their role-specific views.
 
 ## Documentation
 
@@ -98,6 +100,7 @@ README.md
 - [Create operations](docs/create-operations.md)
 - [Read operations](docs/read-operations.md)
 - [Update operations](docs/update-operations.md)
+- [Delete operations](docs/delete-operations.md)
 - [Administrator interface prototype](docs/administrator-interface.md)
 - [Administrator user management](docs/administrator-user-management.md)
 - [Teacher interface prototype](docs/teacher-interface.md)

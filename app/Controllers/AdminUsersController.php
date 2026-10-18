@@ -210,7 +210,7 @@ class AdminUsersController
     private function deleteUser(UserModel $users, array &$state): void
     {
         // Never trust a hidden input alone. Parse a positive integer and confirm
-        // the account is a teacher/student before issuing the DELETE query.
+        // the account is a teacher/student before asking the model to remove it.
         $userId = $this->positiveId($this->postString('id'));
 
         if ($userId === null) {
@@ -220,8 +220,18 @@ class AdminUsersController
 
         $user = $users->findManagedUser($userId);
 
-        if ($user === null || !$users->delete($userId)) {
-            $state['databaseError'] = 'L’usuari seleccionat no existeix o ja s’ha eliminat.';
+        if ($user === null) {
+            $state['databaseError'] = 'L’usuari seleccionat no existeix, ja s’ha eliminat o no es pot eliminar.';
+            return;
+        }
+
+        $result = $users->deleteIfUnassigned($userId);
+        if ($result === 'has_assignments') {
+            $state['databaseError'] = 'No es pot eliminar aquest compte perquè té projectes assignats. Elimina primer les assignacions des de la gestió de projectes.';
+            return;
+        }
+        if ($result !== 'deleted') {
+            $state['databaseError'] = 'L’usuari seleccionat no existeix, ja s’ha eliminat o no es pot eliminar.';
             return;
         }
 
@@ -296,7 +306,7 @@ class AdminUsersController
         }
 
         if ($status === 'deleted') {
-            return 'S’ha eliminat l’usuari i les assignacions i qualificacions vinculades.';
+            return 'S’ha eliminat l’usuari correctament.';
         }
 
         return '';
